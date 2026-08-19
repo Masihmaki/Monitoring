@@ -1,187 +1,174 @@
 namespace MonitoringAgent;
-using System.Runtime.InteropServices;
-using System.IO;
+
 using System.Diagnostics;
-using System.Net.Http; // برای IHttpClientFactory و HttpClient
-using System.Net.Http.Json; // برای متد بهینه‌ی PostAsJsonAsync
+using System.Net.Http.Json;
+using System.Runtime.InteropServices;
+
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private const int PollingIntervalInSeconds = 30; 
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly int _pollingIntervalInSeconds;
+    private PerformanceCounter? _cpuCounter;
+    private long _prevIdleTime;
+    private long _prevTotalTime;
 
-    public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
+    public Worker(
+        ILogger<Worker> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _pollingIntervalInSeconds = configuration.GetValue("MonitoringApi:PollingIntervalSeconds", 30);
     }
-
-
-    // protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    // {
-    //     while (!stoppingToken.IsCancellationRequested)
-    //     {
-    //         _logger.LogInformation("Starting metrics collection at: {time}", DateTimeOffset.Now);
-
-    //         try
-    //         {
-    //             CollectDiskMetrics();
-    //             CollectRamMetrics();
-    //             CollectCpuMetrics();
-    //             // TODO: ۲. پایش RAM در گام بعدی
-    //             // TODO: ۳. پایش CPU در گام بعدی
-    //         }
-    //         catch (Exception ex)
-    //         {
-    //             _logger.LogError(ex, "An error occurred while collecting metrics.");
-    //         }
-
-    //         await Task.Delay(TimeSpan.FromSeconds(PollingIntervalInSeconds), stoppingToken);
-    //     }
-    // }
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            // ۱. جمع‌آوری اطلاعات
-            var metrics = CollectAllMetrics();
-
-            // ۲. ارسال اطلاعات به Backend
-            await SendMetricsToApiAsync(metrics, stoppingToken);
-
-            // ۳. توقف ۳۰ ثانیه‌ای
-            await Task.Delay(TimeSpan.FromSeconds(PollingIntervalInSeconds), stoppingToken);
-        }
-    }
-    private List<DiskMetric> GetDiskMetrics()
-    {
-        DriveInfo[] allDrives = DriveInfo.GetDrives();
-        List<DiskMetric> result = new List<DiskMetric>();
-        foreach (var drive in allDrives)
-        {
-            if (drive.IsReady && drive.DriveType == DriveType.Fixed)
-            {
-                long totalSpace = drive.TotalSize;
-                long freeSpace = drive.TotalFreeSpace;
-                long usedSpace = totalSpace - freeSpace;
-                
-                double usedPercentage = ((double)usedSpace / totalSpace) * 100;
-
-                // _logger.LogInformation(
-                //     "Drive {DriveName} -> Total: {TotalGB} GB | Free: {FreeGB} GB | Used: {UsedPercent:F2}%", 
-                //     drive.Name, 
-                //     totalSpace / (1024 * 1024 * 1024), 
-                //     freeSpace / (1024 * 1024 * 1024),
-                //     usedPercentage
-                // );
-                result.Add(new DiskMetric
-                {
-                    DriveName = drive.Name,
-                    FreeGb = Math.Round((double)freeSpace / (1024 * 1024 * 1024), 2),
-                    TotalGb = Math.Round((double)totalSpace / (1024 * 1024 * 1024), 2),
-                    UsedPercent = Math.Round(usedPercentage, 2)
-                });
-            }
-        }
-        return result;
-    }
-    // private double _currentRamTotalMb;
-    // private double _currentRamUsagePercent;
-    // private double _currentRamUsedMb;
-    // private void CollectRamMetrics()
-    // {
-    //     double freeMemoryMb = 0;
-
-    //     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-    //     {
-    //         // در ویندوز استفاده از PerformanceCounter برای رم آزاد
-    //         using var counter = new PerformanceCounter("Memory", "Available MBytes");
-    //         freeMemoryMb = counter.NextValue();
-
-    //         // برای کل رم سیستم در ویندوز می‌توان از GC یا WMI استفاده کرد
-    //         // در اینجا به صورت تقریبی کل رم فیزیکی اختصاص یافته به سیستم را می‌گیریم
-    //         _currentRamTotalMb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024.0 * 1024.0);
-    //     }
-    //     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-    //     {
-    //         // در لینوکس خواندن فایل proc/meminfo/ که متنی و بسیار ساده است
-    //         string[] lines = File.ReadAllLines("/proc/meminfo");
-    //         foreach (var line in lines)
-    //         {
-    //             if (line.StartsWith("MemTotal:"))
-    //                 _currentRamTotalMb = ParseKbToMb(line);
-    //             else if (line.StartsWith("MemAvailable:"))
-    //                 freeMemoryMb = ParseKbToMb(line);
-    //         }
-    //     }
-
-    //     _currentRamUsedMb = _currentRamTotalMb - freeMemoryMb;
-    //     _currentRamUsagePercent = (_currentRamUsedMb / _currentRamTotalMb) * 100;
-
-    //     // _logger.LogInformation(
-    //     //     "RAM -> Total: {Total:F2} MB | Used: {Used:F2} MB | Usage: {Percent:F2}%",
-    //     //     _currentRamTotalMb,
-    //     //     _currentRamUsedMb,
-    //     //     _currentRamUsagePercent
-    //     // );
-    // }
-    private (double TotalMb, double UsedMb, double UsagePercent) GetRamMetrics()
-    {
-        double freeMemoryMb = 0;
-        double totalMemoryMb = 0;
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            using var counter = new PerformanceCounter("Memory", "Available MBytes");
-            freeMemoryMb = counter.NextValue();
-            totalMemoryMb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024.0 * 1024.0);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            string[] lines = File.ReadAllLines("/proc/meminfo");
-            foreach (var line in lines)
-            {
-                if (line.StartsWith("MemTotal:"))
-                    totalMemoryMb = ParseKbToMb(line);
-                else if (line.StartsWith("MemAvailable:"))
-                    freeMemoryMb = ParseKbToMb(line);
-            }
-        }
-
-        double usedMemoryMb = totalMemoryMb - freeMemoryMb;
-        double usagePercent = totalMemoryMb > 0 ? (usedMemoryMb / totalMemoryMb) * 100 : 0;
-
-        return (totalMemoryMb, usedMemoryMb, usagePercent);
-    }
-
-    // متد کمکی برای خواندن مقادیر لینوکس
-    private double ParseKbToMb(string line)
-    {
-        var parts = line.Split(':', StringSplitOptions.TrimEntries);
-        var valueStr = parts[1].Replace("kB", "").Trim();
-        if (double.TryParse(valueStr, out double kb))
-        {
-            return kb / 1024.0; // تبدیل کیلوبایت به مگابایت
-        }
-        return 0;
-    }
-
-    private PerformanceCounter? _cpuCounter;
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        // در زمان استارت شدن سرویس، کانتر را بسازید تا اولین نمونه‌گیری انجام شود
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            _cpuCounter.NextValue(); // فراخوانی اول برای مقداردهی اولیه (مقدار آن مهم نیست)
+            _cpuCounter.NextValue();
         }
 
         return base.StartAsync(cancellationToken);
     }
 
-    private long _prevIdleTime = 0;
-    private long _prevTotalTime = 0;
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                var metrics = CollectAllMetrics();
+                await SendMetricsToApiAsync(metrics, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to collect or send metrics.");
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(_pollingIntervalInSeconds), stoppingToken);
+        }
+    }
+
+    public override void Dispose()
+    {
+        _cpuCounter?.Dispose();
+        base.Dispose();
+    }
+
+    private MetricPayload CollectAllMetrics()
+    {
+        var ramInfo = GetRamMetrics();
+
+        return new MetricPayload
+        {
+            MachineName = Environment.MachineName,
+            Timestamp = DateTime.UtcNow,
+            CpuUsagePercent = GetCpuUsage(),
+            RamTotalMb = ramInfo.TotalMb,
+            RamUsedMb = ramInfo.UsedMb,
+            RamUsagePercent = ramInfo.UsagePercent,
+            Disks = GetDiskMetrics()
+        };
+    }
+
+    private List<DiskMetric> GetDiskMetrics()
+    {
+        var result = new List<DiskMetric>();
+
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            if (!drive.IsReady || drive.DriveType != DriveType.Fixed)
+            {
+                continue;
+            }
+
+            var totalSpace = drive.TotalSize;
+            var freeSpace = drive.TotalFreeSpace;
+            var usedPercentage = totalSpace == 0 ? 0 : ((double)(totalSpace - freeSpace) / totalSpace) * 100;
+
+            result.Add(new DiskMetric
+            {
+                DriveName = drive.Name,
+                FreeGb = Math.Round(freeSpace / (1024.0 * 1024.0 * 1024.0), 2),
+                TotalGb = Math.Round(totalSpace / (1024.0 * 1024.0 * 1024.0), 2),
+                UsedPercent = Math.Round(usedPercentage, 2)
+            });
+        }
+
+        return result;
+    }
+
+    private (double TotalMb, double UsedMb, double UsagePercent) GetRamMetrics()
+    {
+        double freeMemoryMb;
+        double totalMemoryMb;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            (totalMemoryMb, freeMemoryMb) = GetWindowsRamMegabytes();
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            (totalMemoryMb, freeMemoryMb) = GetLinuxRamMegabytes();
+        }
+        else
+        {
+            return (0, 0, 0);
+        }
+
+        var usedMemoryMb = Math.Max(0, totalMemoryMb - freeMemoryMb);
+        var usagePercent = totalMemoryMb > 0 ? (usedMemoryMb / totalMemoryMb) * 100 : 0;
+
+        return (
+            Math.Round(totalMemoryMb, 2),
+            Math.Round(usedMemoryMb, 2),
+            Math.Round(usagePercent, 2)
+        );
+    }
+
+    private static (double TotalMb, double FreeMb) GetWindowsRamMegabytes()
+    {
+        var status = new MemoryStatusEx
+        {
+            Length = (uint)Marshal.SizeOf<MemoryStatusEx>()
+        };
+        if (!GlobalMemoryStatusEx(ref status))
+        {
+            throw new InvalidOperationException("GlobalMemoryStatusEx failed while reading physical memory.");
+        }
+
+        return (status.TotalPhys / (1024.0 * 1024.0), status.AvailPhys / (1024.0 * 1024.0));
+    }
+
+    private static (double TotalMb, double FreeMb) GetLinuxRamMegabytes()
+    {
+        double totalMemoryMb = 0;
+        double freeMemoryMb = 0;
+
+        foreach (var line in File.ReadAllLines("/proc/meminfo"))
+        {
+            if (line.StartsWith("MemTotal:"))
+            {
+                totalMemoryMb = ParseKbToMb(line);
+            }
+            else if (line.StartsWith("MemAvailable:"))
+            {
+                freeMemoryMb = ParseKbToMb(line);
+            }
+        }
+
+        return (totalMemoryMb, freeMemoryMb);
+    }
+
+    private static double ParseKbToMb(string line)
+    {
+        var parts = line.Split(':', StringSplitOptions.TrimEntries);
+        var valueStr = parts[1].Replace("kB", "", StringComparison.OrdinalIgnoreCase).Trim();
+        return double.TryParse(valueStr, out var kb) ? kb / 1024.0 : 0;
+    }
 
     private double GetCpuUsage()
     {
@@ -189,7 +176,8 @@ public class Worker : BackgroundService
         {
             return _cpuCounter != null ? Math.Round(_cpuCounter.NextValue(), 2) : 0;
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             return Math.Round(GetLinuxCpuUsage(), 2);
         }
@@ -201,33 +189,32 @@ public class Worker : BackgroundService
     {
         try
         {
-            // خواندن خط اول فایل proc/stat/
-            string firstLine = File.ReadLines("/proc/stat").First();
+            var firstLine = File.ReadLines("/proc/stat").First();
             var parts = firstLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            // اعداد مربوط به زمان‌های مختلف پردازنده
-            long user = long.Parse(parts[1]);
-            long nice = long.Parse(parts[2]);
-            long system = long.Parse(parts[3]);
-            long idle = long.Parse(parts[4]);
-            long iowait = long.Parse(parts[5]);
-            long irq = long.Parse(parts[6]);
-            long softirq = long.Parse(parts[7]);
+            var user = long.Parse(parts[1]);
+            var nice = long.Parse(parts[2]);
+            var system = long.Parse(parts[3]);
+            var idle = long.Parse(parts[4]);
+            var iowait = long.Parse(parts[5]);
+            var irq = long.Parse(parts[6]);
+            var softirq = long.Parse(parts[7]);
 
-            long currentIdleTime = idle + iowait;
-            long currentTotalTime = user + nice + system + idle + iowait + irq + softirq;
+            var currentIdleTime = idle + iowait;
+            var currentTotalTime = user + nice + system + idle + iowait + irq + softirq;
 
-            long idleDelta = currentIdleTime - _prevIdleTime;
-            long totalDelta = currentTotalTime - _prevTotalTime;
+            var idleDelta = currentIdleTime - _prevIdleTime;
+            var totalDelta = currentTotalTime - _prevTotalTime;
 
-            // ذخیره مقادیر فعلی برای بازه بعدی (۳۰ ثانیه بعد)
             _prevIdleTime = currentIdleTime;
             _prevTotalTime = currentTotalTime;
 
-            if (totalDelta == 0) return 0;
+            if (totalDelta == 0)
+            {
+                return 0;
+            }
 
-            double cpuUsage = (1.0 - ((double)idleDelta / totalDelta)) * 100.0;
-            return cpuUsage;
+            return (1.0 - ((double)idleDelta / totalDelta)) * 100.0;
         }
         catch (Exception ex)
         {
@@ -235,35 +222,17 @@ public class Worker : BackgroundService
             return 0;
         }
     }
-    private MetricPayload CollectAllMetrics()
-    {
-        var ramInfo = GetRamMetrics();
 
-        var payload = new MetricPayload
-        {
-            MachineName = Environment.MachineName,
-            Timestamp = DateTime.UtcNow,
-            CpuUsagePercent = GetCpuUsage(),
-            RamTotalMb = ramInfo.TotalMb,
-            RamUsedMb = ramInfo.UsedMb,
-            RamUsagePercent = ramInfo.UsagePercent,
-            Disks = GetDiskMetrics()
-        };
-
-        return payload;
-    }
     private async Task SendMetricsToApiAsync(MetricPayload payload, CancellationToken cancellationToken)
     {
         try
         {
             var client = _httpClientFactory.CreateClient("MonitoringApi");
-
-            // ارسال JSON به Endpoint
             var response = await client.PostAsJsonAsync("metrics", payload, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Successfully sent metrics to NestJS Backend at: {time}", DateTimeOffset.Now);
+                _logger.LogInformation("Successfully sent metrics at {time}", DateTimeOffset.Now);
             }
             else
             {
@@ -272,7 +241,25 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while sending metrics to NestJS API.");
+            _logger.LogError(ex, "Error occurred while sending metrics to the API.");
         }
     }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MemoryStatusEx
+    {
+        public uint Length;
+        public uint MemoryLoad;
+        public ulong TotalPhys;
+        public ulong AvailPhys;
+        public ulong TotalPageFile;
+        public ulong AvailPageFile;
+        public ulong TotalVirtual;
+        public ulong AvailVirtual;
+        public ulong AvailExtendedVirtual;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx buffer);
 }

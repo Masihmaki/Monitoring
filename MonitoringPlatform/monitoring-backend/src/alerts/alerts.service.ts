@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { Alert, AlertSeverity } from './entities/alert.entity';
+import { AppConfiguration } from '../config/configuration';
 
 @Injectable()
 export class AlertsService {
   constructor(
     @InjectRepository(Alert)
     private readonly alertRepository: Repository<Alert>,
+    private readonly configService: ConfigService,
   ) {}
 
   async createAlert(
@@ -17,7 +20,24 @@ export class AlertsService {
     thresholdValue: number,
     severity: AlertSeverity,
     message: string,
-  ): Promise<Alert> {
+  ): Promise<Alert | null> {
+    const alerts = this.configService.get<AppConfiguration['alerts']>('alerts');
+    const cooldownMinutes = alerts?.cooldownMinutes ?? 5;
+    const since = new Date(Date.now() - cooldownMinutes * 60 * 1000);
+
+    const recent = await this.alertRepository.findOne({
+      where: {
+        machineName,
+        metricName,
+        createdAt: MoreThan(since),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (recent) {
+      return null;
+    }
+
     const alert = this.alertRepository.create({
       machineName,
       metricName,

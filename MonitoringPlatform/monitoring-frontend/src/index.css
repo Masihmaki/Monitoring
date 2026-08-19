@@ -39,12 +39,20 @@ body {
   100% { transform: scale(0.95); opacity: 0.8; }
 }
 
-.online-dot {
+.online-dot,
+.offline-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: var(--success);
   border-radius: 50%;
+}
+
+.online-dot {
+  background-color: var(--success);
   box-shadow: 0 0 10px var(--success);
   animation: pulse 2s infinite ease-in-out;
+}
+
+.offline-dot {
+  background-color: var(--danger);
 }

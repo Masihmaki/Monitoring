@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsNumber, IsString, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { DiskMetricDto } from './disk-metric.dto';
 
 export class CreateMetricDto {
   @IsString()
@@ -6,17 +15,23 @@ export class CreateMetricDto {
   machineName: string;
 
   @IsNumber()
+  @Min(0)
   cpuUsagePercent: number;
 
   @IsNumber()
+  @Min(0)
   ramUsagePercent: number;
 
   @IsNumber()
+  @Min(0)
   ramTotalMb: number;
 
   @IsNumber()
+  @Min(0)
   ramUsedMb: number;
 
   @IsArray()
-  disks: any[];
+  @ValidateNested({ each: true })
+  @Type(() => DiskMetricDto)
+  disks: DiskMetricDto[];
 }

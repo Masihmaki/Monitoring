@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Cpu, HardDrive, CpuIcon as Memory, AlertTriangle, Activity, RefreshCw, Server, ShieldCheck } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { io } from 'socket.io-client';
+import { ACTIVE_ALERT_MS, AGENT_STALE_MS, API_BASE_URL } from './config';
+
+interface DiskMetric {
+  driveName: string;
+  totalGb: number;
+  freeGb: number;
+  usedPercent: number;
+}
+
 interface Metric {
   id: string;
   machineName: string;
@@ -9,7 +18,7 @@ interface Metric {
   ramUsagePercent: number;
   ramTotalMb: number;
   ramUsedMb: number;
-  disks: any[];
+  disks: DiskMetric[];
   createdAt: string;
 }
 
@@ -33,8 +42,8 @@ export default function App() {
     try {
       setLoading(true);
       const [resMetrics, resAlerts] = await Promise.all([
-        fetch('http://localhost:3000/metrics'),
-        fetch('http://localhost:3000/alerts'),
+        fetch(`${API_BASE_URL}/metrics`),
+        fetch(`${API_BASE_URL}/alerts`),
       ]);
 
       const dataMetrics = await resMetrics.json();
@@ -54,7 +63,7 @@ export default function App() {
     fetchData();
 
     // ۲. ایجاد اتصال پایا روی WebSocket
-    const socket = io('http://localhost:3000');
+    const socket = io(API_BASE_URL);
 
     socket.on('connect', () => {
       console.log('Connected to WebSocket server!');
@@ -81,8 +90,22 @@ export default function App() {
     ramUsagePercent: 0,
     ramTotalMb: 0,
     ramUsedMb: 0,
-    disks: [],
+    disks: [] as DiskMetric[],
+    createdAt: '',
   };
+
+  const isAgentOnline = Boolean(
+    metrics[0]?.createdAt &&
+      Date.now() - new Date(metrics[0].createdAt).getTime() < AGENT_STALE_MS,
+  );
+
+  const activeAlerts = alerts.filter(
+    (alert) => Date.now() - new Date(alert.createdAt).getTime() < ACTIVE_ALERT_MS,
+  );
+
+  const fullestDisk = [...(latest.disks ?? [])].sort(
+    (a, b) => (b.usedPercent ?? 0) - (a.usedPercent ?? 0),
+  )[0];
 
   const chartData = [...metrics].reverse().map((m) => ({
     time: new Date(m.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -118,8 +141,10 @@ export default function App() {
           <strong style={{ color: '#fff', fontSize: '15px' }}>{latest.machineName}</strong>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="online-dot"></span>
-          <span style={{ color: '#10b981', fontSize: '13px', fontWeight: 600 }}>پایدار / در حال ارسال داده</span>
+          <span className={isAgentOnline ? 'online-dot' : 'offline-dot'}></span>
+          <span style={{ color: isAgentOnline ? '#10b981' : '#ef4444', fontSize: '13px', fontWeight: 600 }}>
+            {isAgentOnline ? 'پایدار / در حال ارسال داده' : 'قطع ارتباط با ایجنت'}
+          </span>
         </div>
       </div>
 
@@ -173,11 +198,21 @@ export default function App() {
             </div>
           </div>
           <div style={ui.cardValGroup}>
-            <span style={ui.cardNum}>{latest.disks ? latest.disks.length : 0}</span>
-            <span style={ui.subNum}>درایو فعال</span>
+            <span style={{ ...ui.cardNum, color: (fullestDisk?.usedPercent ?? 0) > 90 ? '#ef4444' : '#f3f4f6' }}>
+              {fullestDisk ? `${fullestDisk.usedPercent.toFixed(1)}%` : '—'}
+            </span>
+            <span style={ui.subNum}>
+              {fullestDisk ? fullestDisk.driveName : `${latest.disks?.length ?? 0} درایو`}
+            </span>
           </div>
-          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '12px' }}>
-            پایش آنلاین تمام Partitionها
+          <div style={ui.progressBg}>
+            <div
+              style={{
+                ...ui.progressBar,
+                width: `${Math.min(fullestDisk?.usedPercent ?? 0, 100)}%`,
+                backgroundColor: (fullestDisk?.usedPercent ?? 0) > 90 ? '#ef4444' : '#f59e0b',
+              }}
+            />
           </div>
         </div>
 
@@ -185,18 +220,18 @@ export default function App() {
         <div style={ui.card}>
           <div style={ui.cardTop}>
             <span>وضعیت هشدارهای سیستم</span>
-            <div style={{ ...ui.iconBadge, backgroundColor: alerts.length > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)' }}>
-              {alerts.length > 0 ? <AlertTriangle size={20} color="#ef4444" /> : <ShieldCheck size={20} color="#10b981" />}
+            <div style={{ ...ui.iconBadge, backgroundColor: activeAlerts.length > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)' }}>
+              {activeAlerts.length > 0 ? <AlertTriangle size={20} color="#ef4444" /> : <ShieldCheck size={20} color="#10b981" />}
             </div>
           </div>
           <div style={ui.cardValGroup}>
-            <span style={{ ...ui.cardNum, color: alerts.length > 0 ? '#ef4444' : '#10b981' }}>
-              {alerts.length}
+            <span style={{ ...ui.cardNum, color: activeAlerts.length > 0 ? '#ef4444' : '#10b981' }}>
+              {activeAlerts.length}
             </span>
             <span style={ui.subNum}>هشدار فعال</span>
           </div>
           <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '12px' }}>
-            {alerts.length === 0 ? 'هیچ خطایی ثبت نشده است' : 'نیازمند بررسی اپراتور'}
+            {activeAlerts.length === 0 ? 'هیچ خطایی ثبت نشده است' : 'نیازمند بررسی اپراتور'}
           </div>
         </div>
       </div>
@@ -235,13 +270,13 @@ export default function App() {
       </div>
 
       {/* بخش هشدارها */}
-      {alerts.length > 0 && (
+      {activeAlerts.length > 0 && (
         <div style={ui.alertSection}>
           <h2 style={{ ...ui.sectionTitle, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertTriangle size={20} /> هشدارهای بحرانی سیستم
           </h2>
           <div style={ui.alertGrid}>
-            {alerts.slice(0, 4).map((a) => (
+            {activeAlerts.slice(0, 4).map((a) => (
               <div key={a.id} style={ui.alertItem}>
                 <div>
                   <span style={ui.severityTag}>{a.severity}</span>

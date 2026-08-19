@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { DiskMetricDto } from '../dto/disk-metric.dto';
 
 @Entity('system_metrics')
 export class Metric {
@@ -20,9 +21,8 @@ export class Metric {
   @Column('float')
   ramUsedMb: number;
 
-  // ذخیره دیسک‌ها به صورت JSON در دیتابیس
   @Column('jsonb')
-  disks: any;
+  disks: DiskMetricDto[];
 
   @CreateDateColumn()
   createdAt: Date;

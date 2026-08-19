@@ -1,19 +1,33 @@
+import './load-env';
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MetricsModule } from './metrics/metrics.module';
 import { AlertsModule } from './alerts/alerts.module';
+import configuration, { AppConfiguration } from './config/configuration';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'admin', // یا postgres در صورت نصب مستقیم
-      password: 'secretpassword', // رمزی که موقع ساخت دیتابیس گذاشتی
-      database: 'monitoring_db',
-      autoLoadEntities: true,
-      synchronize: true, // در محیط توسعه جدول‌ها را خودکار می‌سازد
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      envFilePath: ['.env', '../.env'],
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const db = configService.getOrThrow<AppConfiguration['db']>('db');
+        return {
+          type: 'postgres',
+          host: db.host,
+          port: db.port,
+          username: db.username,
+          password: db.password,
+          database: db.database,
+          autoLoadEntities: true,
+          synchronize: db.synchronize,
+        };
+      },
     }),
     MetricsModule,
     AlertsModule,

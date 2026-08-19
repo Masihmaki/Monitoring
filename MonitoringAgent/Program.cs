@@ -2,14 +2,16 @@ using MonitoringAgent;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// ثبت HttpClient برای ارتباط با NestJS
+var apiBaseUrl = builder.Configuration["MonitoringApi:BaseUrl"]
+    ?? throw new InvalidOperationException("MonitoringApi:BaseUrl is required in configuration.");
+var timeoutSeconds = builder.Configuration.GetValue("MonitoringApi:TimeoutSeconds", 10);
+
 builder.Services.AddHttpClient("MonitoringApi", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:3000/");
-    client.Timeout = TimeSpan.FromSeconds(10);
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });
 
 builder.Services.AddHostedService<Worker>();
 
-var host = builder.Build();
-host.Run();
+builder.Build().Run();
