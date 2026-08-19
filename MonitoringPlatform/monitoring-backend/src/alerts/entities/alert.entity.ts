@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
 export enum AlertSeverity {
   INFO = 'INFO',
@@ -11,11 +17,15 @@ export class Alert {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Index()
+  @Column('uuid', { nullable: true })
+  userId!: string | null;
+
   @Column()
   machineName!: string;
 
   @Column()
-  metricName!: string; // مثلاً CPU, RAM یا DISK
+  metricName!: string;
 
   @Column('float')
   currentValue!: number;

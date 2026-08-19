@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Cpu, HardDrive, CpuIcon as Memory, AlertTriangle, Activity, RefreshCw, Server, ShieldCheck } from 'lucide-react';
+import { Cpu, HardDrive, CpuIcon as Memory, AlertTriangle, Activity, RefreshCw, Server, ShieldCheck, LogOut, Copy } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { io } from 'socket.io-client';
 import { ACTIVE_ALERT_MS, AGENT_STALE_MS, API_BASE_URL } from './config';
+import AuthScreen from './AuthScreen';
+import { authHeaders, clearSession, loadSession, type Session } from './session';
 
 interface DiskMetric {
   driveName: string;
@@ -34,23 +36,42 @@ interface Alert {
 }
 
 export default function App() {
+  const [session, setSession] = useState<Session | null>(() => loadSession());
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [copied, setCopied] = useState(false);
+
+  const logout = () => {
+    clearSession();
+    setSession(null);
+    setMetrics([]);
+    setAlerts([]);
+  };
 
   const fetchData = async () => {
+    if (!session) {
+      return;
+    }
+
     try {
       setLoading(true);
+      const headers = authHeaders(session.accessToken);
       const [resMetrics, resAlerts] = await Promise.all([
-        fetch(`${API_BASE_URL}/metrics`),
-        fetch(`${API_BASE_URL}/alerts`),
+        fetch(`${API_BASE_URL}/metrics`, { headers }),
+        fetch(`${API_BASE_URL}/alerts`, { headers }),
       ]);
+
+      if (resMetrics.status === 401 || resAlerts.status === 401) {
+        logout();
+        return;
+      }
 
       const dataMetrics = await resMetrics.json();
       const dataAlerts = await resAlerts.json();
 
-      setMetrics(dataMetrics);
-      setAlerts(dataAlerts);
+      setMetrics(Array.isArray(dataMetrics) ? dataMetrics : []);
+      setAlerts(Array.isArray(dataAlerts) ? dataAlerts : []);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -59,22 +80,20 @@ export default function App() {
   };
 
   useEffect(() => {
-    // ۱. دریافت اولیه تاریخچه داده‌ها
+    if (!session) {
+      return;
+    }
+
     fetchData();
 
-    // ۲. ایجاد اتصال پایا روی WebSocket
-    const socket = io(API_BASE_URL);
-
-    socket.on('connect', () => {
-      console.log('Connected to WebSocket server!');
+    const socket = io(API_BASE_URL, {
+      auth: { token: session.accessToken },
     });
 
-    // شنود زنده متریک‌های جدید
     socket.on('newMetric', (newMetric: Metric) => {
       setMetrics((prev) => [newMetric, ...prev.slice(0, 99)]);
     });
 
-    // شنود زنده هشدارهای جدید
     socket.on('newAlert', (newAlert: Alert) => {
       setAlerts((prev) => [newAlert, ...prev]);
     });
@@ -82,7 +101,21 @@ export default function App() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [session?.accessToken]);
+
+  if (!session) {
+    return <AuthScreen onAuthenticated={setSession} />;
+  }
+
+  const copyApiKey = async () => {
+    try {
+      await navigator.clipboard.writeText(session.user.apiKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
   
   const latest = metrics[0] || {
     machineName: 'نامشخص',
@@ -123,14 +156,24 @@ export default function App() {
           </div>
           <div>
             <h1 style={ui.title}>داشبورد مرکز پایش سرور</h1>
-            <p style={ui.subtitle}>زیرساخت نظارت بر منابع به‌صورت لحظه‌ای (Real-time)</p>
+            <p style={ui.subtitle}>{session.user.email} · نظارت لحظه‌ای منابع</p>
           </div>
         </div>
 
-        <button onClick={fetchData} style={ui.refreshBtn}>
-          <RefreshCw size={16} className={loading ? 'spin' : ''} />
-          بروزرسانی داده‌ها
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={copyApiKey} style={ui.refreshBtn} title="کلید ایجنت را در appsettings.json قرار دهید">
+            <Copy size={16} />
+            {copied ? 'کپی شد' : 'کلید ایجنت'}
+          </button>
+          <button onClick={fetchData} style={ui.refreshBtn}>
+            <RefreshCw size={16} className={loading ? 'spin' : ''} />
+            بروزرسانی داده‌ها
+          </button>
+          <button onClick={logout} style={ui.refreshBtn}>
+            <LogOut size={16} />
+            خروج
+          </button>
+        </div>
       </header>
 
       {/* بار وضعیت سرور */}

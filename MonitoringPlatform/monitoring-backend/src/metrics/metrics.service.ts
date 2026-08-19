@@ -19,22 +19,26 @@ export class MetricsService {
     private readonly configService: ConfigService,
   ) {}
 
-  async create(createMetricDto: CreateMetricDto): Promise<Metric> {
-    const metric = this.metricRepository.create(createMetricDto);
+  async create(createMetricDto: CreateMetricDto, userId: string): Promise<Metric> {
+    const metric = this.metricRepository.create({
+      ...createMetricDto,
+      userId,
+    });
     const savedMetric = await this.metricRepository.save(metric);
 
     this.metricsGateway.sendNewMetric(savedMetric);
-    await this.evaluateThresholds(createMetricDto);
+    await this.evaluateThresholds(createMetricDto, userId);
 
     return savedMetric;
   }
 
-  private async evaluateThresholds(dto: CreateMetricDto) {
+  private async evaluateThresholds(dto: CreateMetricDto, userId: string) {
     const alerts =
       this.configService.getOrThrow<AppConfiguration['alerts']>('alerts');
 
     if (dto.cpuUsagePercent > alerts.cpuThreshold) {
       const alert = await this.alertsService.createAlert(
+        userId,
         dto.machineName,
         'CPU',
         dto.cpuUsagePercent,
@@ -49,6 +53,7 @@ export class MetricsService {
 
     if (dto.ramUsagePercent > alerts.ramThreshold) {
       const alert = await this.alertsService.createAlert(
+        userId,
         dto.machineName,
         'RAM',
         dto.ramUsagePercent,
@@ -64,6 +69,7 @@ export class MetricsService {
     for (const disk of dto.disks ?? []) {
       if (disk.usedPercent > alerts.diskThreshold) {
         const alert = await this.alertsService.createAlert(
+          userId,
           dto.machineName,
           `DISK (${disk.driveName})`,
           disk.usedPercent,
@@ -78,8 +84,9 @@ export class MetricsService {
     }
   }
 
-  async findAll(): Promise<Metric[]> {
+  async findAll(userId: string): Promise<Metric[]> {
     return await this.metricRepository.find({
+      where: { userId },
       order: { createdAt: 'DESC' },
       take: 100,
     });

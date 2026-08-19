@@ -14,6 +14,7 @@ export class AlertsService {
   ) {}
 
   async createAlert(
+    userId: string,
     machineName: string,
     metricName: string,
     currentValue: number,
@@ -27,6 +28,7 @@ export class AlertsService {
 
     const recent = await this.alertRepository.findOne({
       where: {
+        userId,
         machineName,
         metricName,
         createdAt: MoreThan(since),
@@ -39,6 +41,7 @@ export class AlertsService {
     }
 
     const alert = this.alertRepository.create({
+      userId,
       machineName,
       metricName,
       currentValue,
@@ -49,8 +52,9 @@ export class AlertsService {
     return await this.alertRepository.save(alert);
   }
 
-  async findAll(): Promise<Alert[]> {
+  async findAll(userId: string): Promise<Alert[]> {
     return await this.alertRepository.find({
+      where: { userId },
       order: { createdAt: 'DESC' },
       take: 50,
     });

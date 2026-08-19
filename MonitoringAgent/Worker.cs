@@ -9,6 +9,7 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly int _pollingIntervalInSeconds;
+    private readonly string? _apiKey;
     private PerformanceCounter? _cpuCounter;
     private long _prevIdleTime;
     private long _prevTotalTime;
@@ -21,6 +22,7 @@ public class Worker : BackgroundService
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _pollingIntervalInSeconds = configuration.GetValue("MonitoringApi:PollingIntervalSeconds", 30);
+        _apiKey = configuration["MonitoringApi:ApiKey"];
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -225,6 +227,12 @@ public class Worker : BackgroundService
 
     private async Task SendMetricsToApiAsync(MetricPayload payload, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(_apiKey) || _apiKey == "PASTE_FROM_DASHBOARD")
+        {
+            _logger.LogError("MonitoringApi:ApiKey is missing. Copy the agent key from the dashboard into appsettings.json.");
+            return;
+        }
+
         try
         {
             var client = _httpClientFactory.CreateClient("MonitoringApi");

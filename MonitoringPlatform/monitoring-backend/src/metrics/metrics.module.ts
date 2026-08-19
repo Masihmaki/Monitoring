@@ -5,9 +5,10 @@ import { MetricsController } from './metrics.controller';
 import { Metric } from './entities/metric.entity';
 import { AlertsModule } from '../alerts/alerts.module';
 import { MetricsGateway } from './metrics.gateway';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Metric]), AlertsModule],
+  imports: [TypeOrmModule.forFeature([Metric]), AlertsModule, AuthModule],
   controllers: [MetricsController],
   providers: [MetricsService, MetricsGateway],
   exports: [MetricsGateway]

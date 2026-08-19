@@ -1,14 +1,25 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 import { CreateMetricDto } from './dto/create-metric.dto';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/auth-user';
 
 @Controller('metrics')
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Post()
-  async create(@Body() createMetricDto: CreateMetricDto) {
-    const savedMetric = await this.metricsService.create(createMetricDto);
+  @UseGuards(ApiKeyGuard)
+  async create(
+    @Body() createMetricDto: CreateMetricDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const savedMetric = await this.metricsService.create(
+      createMetricDto,
+      user.id,
+    );
     return {
       status: 'success',
       data: savedMetric,
@@ -16,7 +27,8 @@ export class MetricsController {
   }
 
   @Get()
-  async findAll() {
-    return await this.metricsService.findAll();
+  @UseGuards(JwtAuthGuard)
+  async findAll(@CurrentUser() user: AuthUser) {
+    return await this.metricsService.findAll(user.id);
   }
 }

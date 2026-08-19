@@ -15,6 +15,10 @@ export type AppConfiguration = {
     diskThreshold: number;
     cooldownMinutes: number;
   };
+  jwt: {
+    secret: string;
+    expiresIn: string;
+  };
 };
 
 function required(name: string): string {
@@ -51,6 +55,10 @@ export default function configuration(): AppConfiguration {
       ramThreshold: parseFloat(process.env.ALERT_RAM_THRESHOLD ?? '85'),
       diskThreshold: parseFloat(process.env.ALERT_DISK_THRESHOLD ?? '90'),
       cooldownMinutes: parseInt(process.env.ALERT_COOLDOWN_MINUTES ?? '5', 10),
+    },
+    jwt: {
+      secret: required('JWT_SECRET'),
+      expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
     },
   };
 }

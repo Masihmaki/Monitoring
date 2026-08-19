@@ -1,10 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { DiskMetricDto } from '../dto/disk-metric.dto';
 
 @Entity('system_metrics')
 export class Metric {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column('uuid', { nullable: true })
+  userId: string | null;
 
   @Column()
   machineName: string;

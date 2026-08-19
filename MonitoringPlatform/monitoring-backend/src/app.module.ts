@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MetricsModule } from './metrics/metrics.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { AuthModule } from './auth/auth.module';
 import configuration, { AppConfiguration } from './config/configuration';
 
 @Module({
@@ -29,6 +30,7 @@ import configuration, { AppConfiguration } from './config/configuration';
         };
       },
     }),
+    AuthModule,
     MetricsModule,
     AlertsModule,
   ],
