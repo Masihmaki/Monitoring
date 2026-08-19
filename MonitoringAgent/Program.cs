@@ -1,4 +1,6 @@
 using MonitoringAgent;
+using MonitoringAgent.Collection;
+using MonitoringAgent.Transport;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -17,6 +19,11 @@ builder.Services.AddHttpClient("MonitoringApi", client =>
     }
 });
 
+builder.Services.AddSingleton<CpuCollector>();
+builder.Services.AddSingleton<RamCollector>();
+builder.Services.AddSingleton<DiskCollector>();
+builder.Services.AddSingleton<SystemMetricsCollector>();
+builder.Services.AddSingleton<MetricsApiClient>();
 builder.Services.AddHostedService<Worker>();
 
 builder.Build().Run();

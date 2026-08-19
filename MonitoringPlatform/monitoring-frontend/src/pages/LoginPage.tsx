@@ -1,15 +1,15 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { Activity } from 'lucide-react';
-import { API_BASE_URL } from './config';
-import { saveSession, type Session } from './session';
+import { login, register } from '../api/authApi';
+import type { Session } from '../auth/session';
 
 type Mode = 'login' | 'register';
 
-type AuthScreenProps = {
+type LoginPageProps = {
   onAuthenticated: (session: Session) => void;
 };
 
-export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
+export function LoginPage({ onAuthenticated }: LoginPageProps) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,26 +22,10 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     setLoading(true);
 
     try {
-      const path = mode === 'login' ? '/auth/login' : '/auth/register';
-      const response = await fetch(`${API_BASE_URL}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          (Array.isArray(body.message) ? body.message[0] : body.message) ||
-          'ورود ناموفق بود';
-        throw new Error(message);
-      }
-
-      const session: Session = {
-        accessToken: body.accessToken,
-        user: body.user,
-      };
-      saveSession(session);
+      const session =
+        mode === 'login'
+          ? await login(email, password)
+          : await register(email, password);
       onAuthenticated(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطای شبکه');
@@ -118,7 +102,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   );
 }
 
-const styles: { [key: string]: CSSProperties } = {
+const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: '100vh',
     display: 'flex',

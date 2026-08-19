@@ -1,4 +1,4 @@
-namespace MonitoringAgent;
+namespace MonitoringAgent.Models;
 
 public class MetricPayload
 {

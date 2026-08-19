@@ -1,5 +1,5 @@
-export const TOKEN_KEY = 'monitoring.accessToken';
-export const USER_KEY = 'monitoring.user';
+const TOKEN_KEY = 'monitoring.accessToken';
+const USER_KEY = 'monitoring.user';
 
 export type SessionUser = {
   id: string;
@@ -33,11 +33,4 @@ export function saveSession(session: Session) {
 export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-}
-
-export function authHeaders(token: string): HeadersInit {
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
 }

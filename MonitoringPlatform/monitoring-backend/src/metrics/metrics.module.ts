@@ -5,12 +5,13 @@ import { MetricsController } from './metrics.controller';
 import { Metric } from './entities/metric.entity';
 import { AlertsModule } from '../alerts/alerts.module';
 import { MetricsGateway } from './metrics.gateway';
+import { ThresholdEvaluator } from './threshold-evaluator.service';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Metric]), AlertsModule, AuthModule],
   controllers: [MetricsController],
-  providers: [MetricsService, MetricsGateway],
+  providers: [MetricsService, MetricsGateway, ThresholdEvaluator],
   exports: [MetricsGateway]
 })
 export class MetricsModule {}
