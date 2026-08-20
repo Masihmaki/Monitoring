@@ -32,3 +32,25 @@ export type ChartPoint = {
   CPU: number;
   RAM: number;
 };
+
+export type UptimeStatus = 'UNKNOWN' | 'UP' | 'DOWN';
+
+export type Monitor = {
+  id: string;
+  name: string;
+  url: string;
+  intervalSeconds: number;
+  isEnabled: boolean;
+  lastStatus: UptimeStatus;
+  lastStatusCode: number | null;
+  lastLatencyMs: number | null;
+  lastCheckedAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+};
+
+export type CreateMonitorInput = {
+  url: string;
+  name?: string;
+  intervalSeconds?: number;
+};

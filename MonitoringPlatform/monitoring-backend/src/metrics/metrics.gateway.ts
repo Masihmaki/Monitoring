@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { Metric } from './entities/metric.entity';
 import { Alert } from '../alerts/entities/alert.entity';
+import { Monitor } from '../monitors/entities/monitor.entity';
 
 const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
   .split(',')
@@ -68,6 +69,10 @@ export class MetricsGateway
       return;
     }
     this.server.to(`user:${alert.userId}`).emit('newAlert', alert);
+  }
+
+  sendMonitorUpdate(monitor: Monitor) {
+    this.server.to(`user:${monitor.userId}`).emit('monitorUpdated', monitor);
   }
 
   private bearerFromHeader(header?: string | string[]): string | undefined {

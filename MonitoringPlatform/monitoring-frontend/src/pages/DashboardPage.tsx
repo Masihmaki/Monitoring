@@ -4,7 +4,9 @@ import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { HostStatusBar } from '../components/dashboard/HostStatusBar';
 import { MetricCards } from '../components/dashboard/MetricCards';
 import { ResourceChart } from '../components/dashboard/ResourceChart';
+import { MonitorsSection } from '../components/monitors/MonitorsSection';
 import { useMonitoringFeed } from '../hooks/useMonitoringFeed';
+import { useMonitors } from '../hooks/useMonitors';
 import {
   activeAlerts,
   emptyMetric,
@@ -22,6 +24,14 @@ type DashboardPageProps = {
 
 export function DashboardPage({ session, onLogout }: DashboardPageProps) {
   const { metrics, alerts, loading, refresh } = useMonitoringFeed(session, onLogout);
+  const {
+    monitors,
+    saving,
+    error,
+    refresh: refreshMonitors,
+    addMonitor,
+    removeMonitor,
+  } = useMonitors(session, onLogout);
   const [copied, setCopied] = useState(false);
 
   const copyApiKey = useCallback(async () => {
@@ -44,7 +54,10 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
         loading={loading}
         copied={copied}
         onCopyApiKey={copyApiKey}
-        onRefresh={() => void refresh()}
+        onRefresh={() => {
+          void refresh();
+          void refreshMonitors();
+        }}
         onLogout={onLogout}
       />
       <HostStatusBar machineName={latest.machineName} isOnline={isAgentOnline(metrics)} />
@@ -54,6 +67,13 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
         activeAlertCount={liveAlerts.length}
       />
       <ResourceChart data={toChartData(metrics)} />
+      <MonitorsSection
+        monitors={monitors}
+        saving={saving}
+        error={error}
+        onAdd={addMonitor}
+        onRemove={removeMonitor}
+      />
       <ActiveAlertsList alerts={liveAlerts} />
     </div>
   );

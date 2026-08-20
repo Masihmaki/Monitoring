@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MetricsModule } from './metrics/metrics.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { AuthModule } from './auth/auth.module';
+import { MonitorsModule } from './monitors/monitors.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import configuration, { AppConfiguration } from './config/configuration';
 
 @Module({
@@ -30,9 +32,11 @@ import configuration, { AppConfiguration } from './config/configuration';
         };
       },
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     MetricsModule,
     AlertsModule,
+    MonitorsModule,
   ],
 })
 export class AppModule {}
