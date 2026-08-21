@@ -55,14 +55,34 @@ copy .env.example .env
 
 Edit passwords and `JWT_SECRET` in the backend `.env`. Postgres values in `MonitoringPlatform/.env` and `monitoring-backend/.env` must match.
 
-### 2. Database
+### 2. Database (or full stack with Docker)
+
+**Postgres only (typical local Nest/Vite workflow):**
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform
-docker compose up -d
+docker compose up -d postgres
 ```
 
-### 3. API
+**API + dashboard + Postgres in Docker:**
+
+```powershell
+cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform
+copy .env.example .env
+# set JWT_SECRET and POSTGRES_PASSWORD in .env
+docker compose up -d --build
+```
+
+Then open `http://localhost:5173` (web) and `http://localhost:3000` (API).  
+The agent still runs on the host with `dotnet run` and posts to `http://localhost:3000/`.
+
+To run only Postgres + API (develop the UI with Vite locally):
+
+```powershell
+docker compose up -d --build postgres api
+```
+
+### 3. API (local Node, if not using the `api` container)
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform\monitoring-backend
@@ -72,7 +92,7 @@ npm run start:dev
 
 API: `http://localhost:3000`
 
-### 4. Dashboard
+### 4. Dashboard (local Vite, if not using the `web` container)
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform\monitoring-frontend
