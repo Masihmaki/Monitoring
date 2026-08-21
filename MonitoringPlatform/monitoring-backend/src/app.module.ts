@@ -31,6 +31,8 @@ import configuration, { AppConfiguration } from './config/configuration';
           database: db.database,
           autoLoadEntities: true,
           synchronize: db.synchronize,
+          migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+          migrationsRun: !db.synchronize,
         };
       },
     }),

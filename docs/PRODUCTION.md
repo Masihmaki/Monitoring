@@ -13,11 +13,24 @@ This project is demo-ready with TypeORM `synchronize` and local Docker. Before a
 ## Database
 
 - [ ] Set `DB_SYNCHRONIZE=false` in production
-- [ ] Create schema with an explicit migration workflow (TypeORM migrations or SQL scripts) before first deploy
+- [ ] Ensure `gen_random_uuid()` is available (Postgres 13+ is fine)
+- [ ] On first empty database boot with synchronize off, Nest runs pending migrations automatically (`migrationsRun`)
+- [ ] Or run manually: `cd monitoring-backend && npm run migration:run`
+- [ ] Generate follow-up migrations after entity changes: `npm run migration:generate -- src/database/migrations/Name`
 - [ ] Take backups of Postgres before schema changes
 - [ ] Do not point a synchronized local app at a shared database volume
 
 Local/demo Compose may keep `DB_SYNCHRONIZE=true` so entities create tables automatically. That is convenient for a bachelor demo and unsafe for a multi-user production database.
+
+Baseline migration: `monitoring-backend/src/database/migrations/1740000000000-InitSchema.ts`
+
+### Leaving synchronize
+
+1. Freeze entity changes for the release.
+2. Set `DB_SYNCHRONIZE=false`.
+3. Start API on an empty DB (migrations run on boot) **or** `npm run migration:run`.
+4. For later schema edits, generate/review/run a new migration.
+5. Never re-enable synchronize against that database.
 
 ## Network and CORS
 
@@ -38,13 +51,3 @@ Local/demo Compose may keep `DB_SYNCHRONIZE=true` so entities create tables auto
 - [ ] Each monitored machine uses the **organization** API key from the dashboard
 - [ ] Point `MonitoringApi:BaseUrl` at the public HTTPS API URL
 - [ ] Use distinct OS hostnames (or configure machine names) so the host picker stays useful
-
-## Suggested migration path (when leaving synchronize)
-
-1. Freeze entity changes.
-2. Enable TypeORM migrations in the Nest project.
-3. Generate an initial migration from the current schema.
-4. Deploy with `DB_SYNCHRONIZE=false` and `migration:run` on startup or in CI.
-5. Never re-enable synchronize against that database.
-
-Until then, treat synchronize as a **local/demo only** switch.
