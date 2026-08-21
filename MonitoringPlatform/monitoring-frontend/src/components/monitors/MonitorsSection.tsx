@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<UptimeStatus, string> = {
 const STATUS_COLOR: Record<UptimeStatus, string> = {
   UP: '#10b981',
   DOWN: '#ef4444',
-  UNKNOWN: '#9ca3af',
+  UNKNOWN: 'var(--text-muted)',
 };
 
 export function MonitorsSection({
@@ -60,7 +60,7 @@ export function MonitorsSection({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ ...ui.sectionTitle, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Globe size={18} color="#6366f1" /> پایش دسترس‌پذیری سایت
+            <Globe size={18} color="var(--primary)" /> پایش دسترس‌پذیری سایت
           </h2>
           <p style={ui.sectionSubtitle}>
             آدرس عمومی http/https را اضافه کنید؛ سامانه در بازه انتخابی آن را بررسی می‌کند
@@ -113,7 +113,7 @@ export function MonitorsSection({
       {error ? <p style={{ color: '#ef4444', fontSize: '13px', margin: '12px 0 0' }}>{error}</p> : null}
 
       {monitors.length === 0 ? (
-        <p style={{ color: '#9ca3af', fontSize: '13px', margin: '18px 0 0' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '18px 0 0' }}>
           هنوز سایتی برای پایش ثبت نشده است.
         </p>
       ) : (
@@ -154,10 +154,10 @@ function MonitorRow({
             {STATUS_LABEL[monitor.lastStatus]}
           </span>
         </div>
-        <p style={{ margin: '6px 0 0', color: '#9ca3af', fontSize: '12px', direction: 'ltr', textAlign: 'right' }}>
+        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '12px', direction: 'ltr', textAlign: 'right' }}>
           {monitor.url}
         </p>
-        <p style={{ margin: '6px 0 0', color: '#9ca3af', fontSize: '12px' }}>
+        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '12px' }}>
           {monitor.lastLatencyMs != null ? `${monitor.lastLatencyMs}ms` : '—'}
           {' · '}
           {monitor.lastStatusCode != null ? `HTTP ${monitor.lastStatusCode}` : 'بدون پاسخ'}

@@ -36,67 +36,77 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.brand}>
-          <div style={styles.logo}>
-            <Activity size={22} color="#6366f1" />
-          </div>
-          <div>
-            <h1 style={styles.title}>پایش سرور</h1>
-            <p style={styles.subtitle}>ورود به داشبورد کسب‌وکار شما</p>
-          </div>
+      <div style={styles.shell}>
+        <div style={styles.hero}>
+          <p style={styles.kicker}>Monitoring Platform</p>
+          <h1 style={styles.heroTitle}>پایش سرور</h1>
+          <p style={styles.heroText}>
+            نظارت زنده روی منابع میزبان، دسترس‌پذیری سایت، و هشدارهای عملیاتی برای تیم شما.
+          </p>
         </div>
 
-        <div style={styles.tabs}>
-          <button
-            type="button"
-            style={mode === 'login' ? styles.tabActive : styles.tab}
-            onClick={() => setMode('login')}
-          >
-            ورود
-          </button>
-          <button
-            type="button"
-            style={mode === 'register' ? styles.tabActive : styles.tab}
-            onClick={() => setMode('register')}
-          >
-            ثبت‌نام
-          </button>
+        <div style={styles.card} className="panel-enter">
+          <div style={styles.brand}>
+            <div style={styles.logo}>
+              <Activity size={22} color="var(--primary)" />
+            </div>
+            <div>
+              <h2 style={styles.title}>ورود به داشبورد</h2>
+              <p style={styles.subtitle}>حساب کسب‌وکار خود را باز کنید</p>
+            </div>
+          </div>
+
+          <div style={styles.tabs}>
+            <button
+              type="button"
+              style={mode === 'login' ? styles.tabActive : styles.tab}
+              onClick={() => setMode('login')}
+            >
+              ورود
+            </button>
+            <button
+              type="button"
+              style={mode === 'register' ? styles.tabActive : styles.tab}
+              onClick={() => setMode('register')}
+            >
+              ثبت‌نام
+            </button>
+          </div>
+
+          <form onSubmit={submit} style={styles.form}>
+            <label style={styles.label}>
+              ایمیل
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={styles.input}
+                autoComplete="email"
+                dir="ltr"
+              />
+            </label>
+            <label style={styles.label}>
+              رمز عبور (حداقل ۸ کاراکتر)
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.input}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                dir="ltr"
+              />
+            </label>
+
+            {error ? <p style={styles.error}>{error}</p> : null}
+
+            <button type="submit" disabled={loading} style={styles.submit}>
+              {loading ? 'در حال ارسال...' : mode === 'login' ? 'ورود' : 'ایجاد حساب'}
+            </button>
+          </form>
         </div>
-
-        <form onSubmit={submit} style={styles.form}>
-          <label style={styles.label}>
-            ایمیل
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              autoComplete="email"
-              dir="ltr"
-            />
-          </label>
-          <label style={styles.label}>
-            رمز عبور (حداقل ۸ کاراکتر)
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              dir="ltr"
-            />
-          </label>
-
-          {error ? <p style={styles.error}>{error}</p> : null}
-
-          <button type="submit" disabled={loading} style={styles.submit}>
-            {loading ? 'در حال ارسال...' : mode === 'login' ? 'ورود' : 'ایجاد حساب'}
-          </button>
-        </form>
       </div>
     </div>
   );
@@ -108,27 +118,62 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '24px',
+    padding: '28px 20px',
+  },
+  shell: {
+    width: '100%',
+    maxWidth: '920px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '28px',
+    alignItems: 'center',
+  },
+  hero: {
+    padding: '12px 8px',
+  },
+  kicker: {
+    margin: 0,
+    color: 'var(--primary)',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    fontSize: '12px',
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
+    margin: '10px 0 0',
+    fontSize: '48px',
+    lineHeight: 1.1,
+    fontWeight: 900,
+    letterSpacing: '-0.04em',
+  },
+  heroText: {
+    margin: '14px 0 0',
+    color: 'var(--text-muted)',
+    fontSize: '15px',
+    lineHeight: 1.8,
+    maxWidth: '36ch',
   },
   card: {
     width: '100%',
-    maxWidth: '420px',
-    backgroundColor: '#151c28',
-    border: '1px solid #232d3f',
-    borderRadius: '16px',
+    backgroundColor: 'var(--bg-elevated)',
+    backdropFilter: 'blur(12px)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '22px',
     padding: '28px',
+    boxShadow: 'var(--shadow-soft)',
   },
   brand: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    marginBottom: '24px',
+    marginBottom: '22px',
   },
   logo: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '12px',
-    border: '1px solid #232d3f',
+    width: '46px',
+    height: '46px',
+    borderRadius: '14px',
+    border: '1px solid var(--border-color)',
+    background: 'var(--primary-soft)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -136,36 +181,39 @@ const styles: Record<string, CSSProperties> = {
   title: {
     margin: 0,
     fontSize: '20px',
+    fontWeight: 800,
   },
   subtitle: {
     margin: '4px 0 0',
-    color: '#9ca3af',
+    color: 'var(--text-muted)',
     fontSize: '13px',
   },
   tabs: {
     display: 'flex',
     gap: '8px',
-    marginBottom: '20px',
+    marginBottom: '18px',
   },
   tab: {
     flex: 1,
     background: 'transparent',
-    color: '#9ca3af',
-    border: '1px solid #232d3f',
-    borderRadius: '10px',
-    padding: '8px',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '999px',
+    padding: '9px',
     cursor: 'pointer',
-    fontFamily: 'Vazirmatn',
+    fontFamily: 'var(--font-ui)',
+    fontWeight: 600,
   },
   tabActive: {
     flex: 1,
-    background: '#6366f1',
+    background: 'var(--primary)',
     color: '#fff',
-    border: '1px solid #6366f1',
-    borderRadius: '10px',
-    padding: '8px',
+    border: '1px solid var(--primary)',
+    borderRadius: '999px',
+    padding: '9px',
     cursor: 'pointer',
-    fontFamily: 'Vazirmatn',
+    fontFamily: 'var(--font-ui)',
+    fontWeight: 700,
   },
   form: {
     display: 'flex',
@@ -177,31 +225,32 @@ const styles: Record<string, CSSProperties> = {
     flexDirection: 'column',
     gap: '6px',
     fontSize: '13px',
-    color: '#9ca3af',
+    color: 'var(--text-muted)',
+    fontWeight: 600,
   },
   input: {
-    backgroundColor: '#0b0f17',
-    color: '#f3f4f6',
-    border: '1px solid #232d3f',
-    borderRadius: '10px',
-    padding: '10px 12px',
+    backgroundColor: 'var(--bg-solid)',
+    color: 'var(--text-main)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: '12px',
+    padding: '11px 12px',
     fontFamily: 'inherit',
     fontSize: '14px',
   },
   error: {
     margin: 0,
-    color: '#ef4444',
+    color: 'var(--danger)',
     fontSize: '13px',
   },
   submit: {
-    backgroundColor: '#6366f1',
+    backgroundColor: 'var(--primary)',
     color: '#fff',
     border: 'none',
-    borderRadius: '10px',
+    borderRadius: '999px',
     padding: '12px',
     cursor: 'pointer',
-    fontFamily: 'Vazirmatn',
-    fontWeight: 600,
+    fontFamily: 'var(--font-ui)',
+    fontWeight: 700,
     fontSize: '14px',
   },
 };

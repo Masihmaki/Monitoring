@@ -1,28 +1,63 @@
 :root {
-  --bg-main: #0b0f17;
-  --bg-card: #151c28;
-  --bg-card-hover: #1c2536;
-  --border-color: #232d3f;
-  --primary: #6366f1;
-  --primary-glow: rgba(99, 102, 241, 0.15);
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
+  --bg-main: #eef3f1;
+  --bg-elevated: rgba(255, 255, 255, 0.78);
+  --bg-solid: #ffffff;
+  --bg-muted: #e4ece8;
+  --border-color: rgba(21, 45, 40, 0.1);
+  --border-strong: rgba(21, 45, 40, 0.16);
+  --primary: #0f7a72;
+  --primary-strong: #0b5f59;
+  --primary-soft: rgba(15, 122, 114, 0.12);
+  --accent-cpu: #0f7a72;
+  --accent-ram: #1d6f8a;
+  --accent-disk: #b7791f;
+  --success: #1f8a5b;
+  --warning: #b7791f;
+  --danger: #c23b3b;
+  --text-main: #15231f;
+  --text-muted: #5c7069;
+  --shadow-soft: 0 18px 40px rgba(21, 45, 40, 0.08);
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --font-ui: 'Vazirmatn', 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  padding: 0;
-  background-color: var(--bg-main);
+  min-height: 100vh;
   color: var(--text-main);
-  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-ui);
   direction: rtl;
   -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(15, 122, 114, 0.18), transparent 55%),
+    radial-gradient(900px 500px at -10% 100%, rgba(29, 111, 138, 0.14), transparent 50%),
+    linear-gradient(160deg, #f7faf8 0%, #eef3f1 45%, #e8eef2 100%);
+  background-attachment: fixed;
 }
 
-/* انیمیشن چرخش آیکون بروزرسانی */
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button:hover {
+  filter: brightness(0.98);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -32,27 +67,48 @@ body {
   animation: spin 1s linear infinite;
 }
 
-/* انیمیشن پالس برای وضعیت آنلاین */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.8; }
+  0% { transform: scale(0.92); opacity: 0.75; }
+  50% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(0.92); opacity: 0.75; }
+}
+
+.panel-enter {
+  animation: rise-in 0.45s ease both;
 }
 
 .online-dot,
 .offline-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
 }
 
 .online-dot {
   background-color: var(--success);
-  box-shadow: 0 0 10px var(--success);
+  box-shadow: 0 0 0 4px rgba(31, 138, 91, 0.16);
   animation: pulse 2s infinite ease-in-out;
 }
 
 .offline-dot {
   background-color: var(--danger);
+  box-shadow: 0 0 0 4px rgba(194, 59, 59, 0.14);
+}
+
+@media (max-width: 720px) {
+  .dashboard-actions {
+    width: 100%;
+  }
 }

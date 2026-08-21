@@ -28,24 +28,27 @@ export function DashboardHeader({
   const active = organizations.find((org) => org.id === activeOrganizationId);
 
   return (
-    <header style={ui.header}>
+    <header style={ui.header} className="panel-enter">
       <div style={ui.brand}>
         <div style={ui.logoBox}>
-          <Activity size={24} color="#6366f1" />
+          <Activity size={24} color="var(--primary)" />
         </div>
         <div>
-          <h1 style={ui.title}>داشبورد مرکز پایش سرور</h1>
+          <h1 style={ui.title}>پایش سرور</h1>
           <p style={ui.subtitle}>
             {email} · {active?.name ?? 'سازمان'} · نظارت لحظه‌ای منابع
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+      <div
+        className="dashboard-actions"
+        style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}
+      >
         <select
           value={activeOrganizationId}
           onChange={(event) => onOrganizationChange(event.target.value)}
-          style={{ ...ui.monitorInput, width: 'auto', minWidth: '160px' }}
+          style={{ ...ui.monitorInput, width: 'auto', minWidth: '160px', borderRadius: '999px' }}
           title="سازمان فعال"
         >
           {organizations.map((org) => (
@@ -60,7 +63,7 @@ export function DashboardHeader({
         </button>
         <button onClick={onRefresh} style={ui.refreshBtn}>
           <RefreshCw size={16} className={loading ? 'spin' : ''} />
-          بروزرسانی داده‌ها
+          بروزرسانی
         </button>
         <button onClick={onLogout} style={ui.refreshBtn}>
           <LogOut size={16} />

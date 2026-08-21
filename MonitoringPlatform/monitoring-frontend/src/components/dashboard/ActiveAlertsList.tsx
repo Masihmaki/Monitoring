@@ -23,7 +23,7 @@ export function ActiveAlertsList({ alerts, onUpdateStatus }: ActiveAlertsListPro
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={ui.severityTag}>{alert.severity}</span>
-                <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                   {alert.status === 'OPEN'
                     ? 'باز'
                     : alert.status === 'ACKNOWLEDGED'
@@ -53,7 +53,7 @@ export function ActiveAlertsList({ alerts, onUpdateStatus }: ActiveAlertsListPro
                 ) : null}
               </div>
             </div>
-            <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
               {new Date(alert.createdAt).toLocaleTimeString('fa-IR')}
             </span>
           </div>

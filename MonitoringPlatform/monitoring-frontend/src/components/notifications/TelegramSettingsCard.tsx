@@ -40,7 +40,7 @@ export function TelegramSettingsCard({
         هشدارهای CPU، رم، دیسک و قطع سایت به چت تلگرام شما فرستاده می‌شود
       </p>
 
-      <ol style={{ margin: '14px 0 0', paddingRight: '18px', color: '#9ca3af', fontSize: '13px', lineHeight: 1.8 }}>
+      <ol style={{ margin: '14px 0 0', paddingRight: '18px', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.8 }}>
         <li>در @BotFather یک ربات بسازید و توکن را در TELEGRAM_BOT_TOKEN سرور قرار دهید.</li>
         <li>با همان ربات یک گفتگو را Start کنید.</li>
         <li>شناسه عددی چت را از @userinfobot بگیرید و ذخیره کنید.</li>
@@ -80,7 +80,12 @@ export function TelegramSettingsCard({
             type="button"
             disabled={saving}
             onClick={() => void onSave(null)}
-            style={{ ...ui.monitorSubmit, backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #232d3f' }}
+            style={{
+              ...ui.monitorSubmit,
+              backgroundColor: 'transparent',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--border-color)',
+            }}
           >
             <Unplug size={16} />
             قطع اتصال

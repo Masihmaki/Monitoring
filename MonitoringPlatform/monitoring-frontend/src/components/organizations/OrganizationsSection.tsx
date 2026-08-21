@@ -46,7 +46,7 @@ export function OrganizationsSection({
   return (
     <section style={ui.chartSection}>
       <h2 style={{ ...ui.sectionTitle, display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Users size={18} color="#6366f1" /> سازمان و اعضا
+        <Users size={18} color="var(--primary)" /> سازمان و اعضا
       </h2>
       <p style={ui.sectionSubtitle}>
         داده‌های پایش بین اعضای یک سازمان مشترک است. کلید ایجنت متعلق به سازمان فعال است.
@@ -90,7 +90,7 @@ export function OrganizationsSection({
           </button>
         </form>
       ) : (
-        <p style={{ color: '#9ca3af', fontSize: '13px', margin: '14px 0 0' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '14px 0 0' }}>
           فقط مالک سازمان می‌تواند عضو جدید دعوت کند.
         </p>
       )}
@@ -103,7 +103,7 @@ export function OrganizationsSection({
           <div key={member.id} style={ui.monitorRow}>
             <div>
               <strong style={{ direction: 'ltr', display: 'inline-block' }}>{member.email}</strong>
-              <p style={{ margin: '6px 0 0', color: '#9ca3af', fontSize: '12px' }}>
+              <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '12px' }}>
                 {member.role === 'OWNER' ? 'مالک' : 'عضو'}
               </p>
             </div>
