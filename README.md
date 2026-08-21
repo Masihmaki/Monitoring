@@ -164,7 +164,8 @@ Dashboard requests send `Authorization: Bearer …` and `X-Organization-Id`.
 - Local development uses TypeORM `synchronize=true`. Do **not** enable that against a real shared database.
 - Never commit real `.env` files; only `.env.example` belongs in git.
 - Uptime checks block localhost and private IP ranges on purpose (SSRF protection).
-- Backend unit tests: `cd monitoring-backend && npm test` (URL policy + threshold evaluator).
+- Backend unit tests: `cd monitoring-backend && npm test`
+- Optional Postgres e2e: `cd monitoring-backend`, set `RUN_E2E=1`, then `npm run test:e2e`
 - Before a real deploy, follow [docs/PRODUCTION.md](docs/PRODUCTION.md) (secrets, `DB_SYNCHRONIZE=false`, CORS, TLS).
 
 ## License
