@@ -165,6 +165,7 @@ Dashboard requests send `Authorization: Bearer …` and `X-Organization-Id`.
 - Never commit real `.env` files; only `.env.example` belongs in git.
 - Uptime checks block localhost and private IP ranges on purpose (SSRF protection).
 - Backend unit tests: `cd monitoring-backend && npm test` (URL policy + threshold evaluator).
+- Before a real deploy, follow [docs/PRODUCTION.md](docs/PRODUCTION.md) (secrets, `DB_SYNCHRONIZE=false`, CORS, TLS).
 
 ## License
 
