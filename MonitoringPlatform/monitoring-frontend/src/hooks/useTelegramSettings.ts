@@ -30,7 +30,12 @@ export function useTelegramSettings(
 
   const load = useCallback(async () => {
     try {
-      setSettings(await fetchTelegramSettings(session.accessToken));
+      setSettings(
+        await fetchTelegramSettings(
+          session.accessToken,
+          session.activeOrganizationId,
+        ),
+      );
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized();
@@ -38,7 +43,7 @@ export function useTelegramSettings(
       }
       console.error('Error fetching Telegram settings:', err);
     }
-  }, [session.accessToken, onUnauthorized]);
+  }, [session.accessToken, session.activeOrganizationId, onUnauthorized]);
 
   const saveChatId = useCallback(
     async (chatId: string | null): Promise<boolean> => {
@@ -46,7 +51,11 @@ export function useTelegramSettings(
       setNotice('');
       setSaving(true);
       try {
-        const next = await saveTelegramChatId(session.accessToken, chatId);
+        const next = await saveTelegramChatId(
+          session.accessToken,
+          session.activeOrganizationId,
+          chatId,
+        );
         setSettings(next);
         setNotice(chatId ? 'شناسه تلگرام ذخیره شد' : 'اتصال تلگرام قطع شد');
         return true;
@@ -61,7 +70,7 @@ export function useTelegramSettings(
         setSaving(false);
       }
     },
-    [session.accessToken, onUnauthorized],
+    [session.accessToken, session.activeOrganizationId, onUnauthorized],
   );
 
   const sendTest = useCallback(async () => {
@@ -69,7 +78,7 @@ export function useTelegramSettings(
     setNotice('');
     setTesting(true);
     try {
-      await sendTelegramTest(session.accessToken);
+      await sendTelegramTest(session.accessToken, session.activeOrganizationId);
       setNotice('پیام آزمایشی ارسال شد');
     } catch (err) {
       if (err instanceof UnauthorizedError) {
@@ -80,7 +89,7 @@ export function useTelegramSettings(
     } finally {
       setTesting(false);
     }
-  }, [session.accessToken, onUnauthorized]);
+  }, [session.accessToken, session.activeOrganizationId, onUnauthorized]);
 
   useEffect(() => {
     void load();

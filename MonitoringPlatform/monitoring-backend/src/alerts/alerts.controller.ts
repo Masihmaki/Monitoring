@@ -11,6 +11,6 @@ export class AlertsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll(@CurrentUser() user: AuthUser) {
-    return await this.alertsService.findAll(user.id);
+    return await this.alertsService.findAll(user.organizationId);
   }
 }

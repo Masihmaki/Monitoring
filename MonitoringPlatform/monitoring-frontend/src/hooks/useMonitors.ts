@@ -33,7 +33,10 @@ export function useMonitors(
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
-      const next = await fetchMonitors(session.accessToken);
+      const next = await fetchMonitors(
+        session.accessToken,
+        session.activeOrganizationId,
+      );
       setMonitors(next);
     } catch (err) {
       if (err instanceof UnauthorizedError) {
@@ -44,14 +47,18 @@ export function useMonitors(
     } finally {
       setLoading(false);
     }
-  }, [session.accessToken, onUnauthorized]);
+  }, [session.accessToken, session.activeOrganizationId, onUnauthorized]);
 
   const addMonitor = useCallback(
     async (input: CreateMonitorInput): Promise<boolean> => {
       setError('');
       setSaving(true);
       try {
-        const created = await createMonitor(session.accessToken, input);
+        const created = await createMonitor(
+          session.accessToken,
+          session.activeOrganizationId,
+          input,
+        );
         setMonitors((prev) => upsertMonitor(prev, created));
         return true;
       } catch (err) {
@@ -65,14 +72,18 @@ export function useMonitors(
         setSaving(false);
       }
     },
-    [session.accessToken, onUnauthorized],
+    [session.accessToken, session.activeOrganizationId, onUnauthorized],
   );
 
   const removeMonitor = useCallback(
     async (id: string) => {
       setError('');
       try {
-        await deleteMonitor(session.accessToken, id);
+        await deleteMonitor(
+          session.accessToken,
+          session.activeOrganizationId,
+          id,
+        );
         setMonitors((prev) => prev.filter((item) => item.id !== id));
       } catch (err) {
         if (err instanceof UnauthorizedError) {
@@ -82,14 +93,17 @@ export function useMonitors(
         setError(err instanceof Error ? err.message : 'حذف سایت ناموفق بود');
       }
     },
-    [session.accessToken, onUnauthorized],
+    [session.accessToken, session.activeOrganizationId, onUnauthorized],
   );
 
   useEffect(() => {
     void refresh();
 
     const socket = io(API_BASE_URL, {
-      auth: { token: session.accessToken },
+      auth: {
+        token: session.accessToken,
+        organizationId: session.activeOrganizationId,
+      },
     });
 
     socket.on('monitorUpdated', (updated: Monitor) => {
@@ -99,7 +113,7 @@ export function useMonitors(
     return () => {
       socket.disconnect();
     };
-  }, [session.accessToken, refresh]);
+  }, [session.accessToken, session.activeOrganizationId, refresh]);
 
   return {
     monitors,

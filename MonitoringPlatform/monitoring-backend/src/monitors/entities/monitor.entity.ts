@@ -9,14 +9,18 @@ import {
 import { UptimeStatus } from '../uptime-status';
 
 @Entity('uptime_monitors')
-@Index(['userId', 'url'], { unique: true })
+@Index(['organizationId', 'url'], { unique: true })
 export class Monitor {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Index()
-  @Column('uuid')
-  userId!: string;
+  @Column('uuid', { nullable: true })
+  userId!: string | null;
+
+  @Index()
+  @Column('uuid', { nullable: true })
+  organizationId!: string | null;
 
   @Column()
   name!: string;

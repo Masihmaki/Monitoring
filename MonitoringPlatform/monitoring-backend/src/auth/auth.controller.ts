@@ -31,6 +31,6 @@ export class AuthController {
     if (!user) {
       return null;
     }
-    return this.authService.toPublicUser(user);
+    return this.authService.toAuthResponse(user);
   }
 }

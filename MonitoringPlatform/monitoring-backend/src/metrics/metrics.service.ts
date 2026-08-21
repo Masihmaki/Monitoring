@@ -17,31 +17,36 @@ export class MetricsService {
     private readonly thresholdEvaluator: ThresholdEvaluator,
   ) {}
 
-  async create(createMetricDto: CreateMetricDto, userId: string): Promise<Metric> {
+  async create(
+    createMetricDto: CreateMetricDto,
+    organizationId: string,
+    userId?: string,
+  ): Promise<Metric> {
     const metric = this.metricRepository.create({
       ...createMetricDto,
-      userId,
+      organizationId,
+      userId: userId && userId !== 'agent' ? userId : null,
     });
     const savedMetric = await this.metricRepository.save(metric);
 
     this.metricsGateway.sendNewMetric(savedMetric);
-    await this.raiseAlerts(createMetricDto, userId);
+    await this.raiseAlerts(createMetricDto, organizationId);
 
     return savedMetric;
   }
 
-  async findAll(userId: string): Promise<Metric[]> {
+  async findAll(organizationId: string): Promise<Metric[]> {
     return await this.metricRepository.find({
-      where: { userId },
+      where: { organizationId },
       order: { createdAt: 'DESC' },
       take: 100,
     });
   }
 
-  private async raiseAlerts(dto: CreateMetricDto, userId: string) {
+  private async raiseAlerts(dto: CreateMetricDto, organizationId: string) {
     for (const violation of this.thresholdEvaluator.evaluate(dto)) {
       const alert = await this.alertsService.createAlert(
-        userId,
+        organizationId,
         dto.machineName,
         violation.metricName,
         violation.currentValue,

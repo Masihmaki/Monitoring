@@ -1,10 +1,13 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   ServiceUnavailableException,
+  forwardRef,
 } from '@nestjs/common';
 import { Alert } from '../alerts/entities/alert.entity';
+import { OrganizationsService } from '../organizations/organizations.service';
 import { UsersService } from '../users/users.service';
 import { TelegramService } from './telegram.service';
 
@@ -23,6 +26,8 @@ export class NotificationsService {
   constructor(
     private readonly usersService: UsersService,
     private readonly telegramService: TelegramService,
+    @Inject(forwardRef(() => OrganizationsService))
+    private readonly organizationsService: OrganizationsService,
   ) {}
 
   async getTelegramSettings(userId: string): Promise<TelegramSettings> {
@@ -65,23 +70,34 @@ export class NotificationsService {
   }
 
   async notifyAlert(alert: Alert): Promise<void> {
-    if (!alert.userId || !this.telegramService.isConfigured()) {
+    if (!alert.organizationId || !this.telegramService.isConfigured()) {
       return;
     }
 
     try {
-      const user = await this.usersService.findById(alert.userId);
-      if (!user?.telegramChatId) {
-        return;
-      }
-
-      await this.telegramService.sendMessage(
-        user.telegramChatId,
-        this.formatAlert(alert),
+      const memberIds = await this.organizationsService.listMemberUserIds(
+        alert.organizationId,
       );
+      const text = this.formatAlert(alert);
+
+      for (const userId of memberIds) {
+        const user = await this.usersService.findById(userId);
+        if (!user?.telegramChatId) {
+          continue;
+        }
+        try {
+          await this.telegramService.sendMessage(user.telegramChatId, text);
+        } catch (error) {
+          this.logger.warn(
+            `Telegram alert delivery failed for user ${userId}: ${
+              error instanceof Error ? error.message : 'unknown error'
+            }`,
+          );
+        }
+      }
     } catch (error) {
       this.logger.warn(
-        `Telegram alert delivery failed for user ${alert.userId}: ${
+        `Telegram alert fan-out failed for org ${alert.organizationId}: ${
           error instanceof Error ? error.message : 'unknown error'
         }`,
       );

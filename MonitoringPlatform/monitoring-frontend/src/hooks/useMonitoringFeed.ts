@@ -25,8 +25,8 @@ export function useMonitoringFeed(
     try {
       setLoading(true);
       const [nextMetrics, nextAlerts] = await Promise.all([
-        fetchMetrics(session.accessToken),
-        fetchAlerts(session.accessToken),
+        fetchMetrics(session.accessToken, session.activeOrganizationId),
+        fetchAlerts(session.accessToken, session.activeOrganizationId),
       ]);
       setMetrics(nextMetrics);
       setAlerts(nextAlerts);
@@ -39,13 +39,16 @@ export function useMonitoringFeed(
     } finally {
       setLoading(false);
     }
-  }, [session.accessToken, onUnauthorized]);
+  }, [session.accessToken, session.activeOrganizationId, onUnauthorized]);
 
   useEffect(() => {
     void refresh();
 
     const socket = io(API_BASE_URL, {
-      auth: { token: session.accessToken },
+      auth: {
+        token: session.accessToken,
+        organizationId: session.activeOrganizationId,
+      },
     });
 
     socket.on('newMetric', (newMetric: Metric) => {
@@ -59,7 +62,7 @@ export function useMonitoringFeed(
     return () => {
       socket.disconnect();
     };
-  }, [session.accessToken, refresh]);
+  }, [session.accessToken, session.activeOrganizationId, refresh]);
 
   return { metrics, alerts, loading, refresh };
 }

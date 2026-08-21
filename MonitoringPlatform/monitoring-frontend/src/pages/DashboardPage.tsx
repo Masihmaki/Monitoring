@@ -6,8 +6,10 @@ import { MetricCards } from '../components/dashboard/MetricCards';
 import { ResourceChart } from '../components/dashboard/ResourceChart';
 import { MonitorsSection } from '../components/monitors/MonitorsSection';
 import { TelegramSettingsCard } from '../components/notifications/TelegramSettingsCard';
+import { OrganizationsSection } from '../components/organizations/OrganizationsSection';
 import { useMonitoringFeed } from '../hooks/useMonitoringFeed';
 import { useMonitors } from '../hooks/useMonitors';
+import { useOrganizations } from '../hooks/useOrganizations';
 import { useTelegramSettings } from '../hooks/useTelegramSettings';
 import {
   activeAlerts,
@@ -17,14 +19,19 @@ import {
   toChartData,
 } from '../lib/metricView';
 import { ui } from '../styles/ui';
-import type { Session } from '../auth/session';
+import { switchActiveOrganization, type Session } from '../auth/session';
 
 type DashboardPageProps = {
   session: Session;
+  onSessionChange: (session: Session) => void;
   onLogout: () => void;
 };
 
-export function DashboardPage({ session, onLogout }: DashboardPageProps) {
+export function DashboardPage({
+  session,
+  onSessionChange,
+  onLogout,
+}: DashboardPageProps) {
   const { metrics, alerts, loading, refresh } = useMonitoringFeed(session, onLogout);
   const {
     monitors,
@@ -35,6 +42,7 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
     removeMonitor,
   } = useMonitors(session, onLogout);
   const telegram = useTelegramSettings(session, onLogout);
+  const organizations = useOrganizations(session, onSessionChange, onLogout);
   const [copied, setCopied] = useState(false);
 
   const copyApiKey = useCallback(async () => {
@@ -49,19 +57,29 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
 
   const latest = metrics[0] ?? emptyMetric;
   const liveAlerts = activeAlerts(alerts);
+  const activeOrg = session.organizations.find(
+    (org) => org.id === session.activeOrganizationId,
+  );
+  const isOwner = activeOrg?.role === 'OWNER';
 
   return (
     <div style={ui.wrapper}>
       <DashboardHeader
         email={session.user.email}
+        organizations={session.organizations}
+        activeOrganizationId={session.activeOrganizationId}
         loading={loading}
         copied={copied}
         onCopyApiKey={copyApiKey}
         onRefresh={() => {
           void refresh();
           void refreshMonitors();
+          void organizations.refreshMembers();
         }}
         onLogout={onLogout}
+        onOrganizationChange={(organizationId) => {
+          onSessionChange(switchActiveOrganization(session, organizationId));
+        }}
       />
       <HostStatusBar machineName={latest.machineName} isOnline={isAgentOnline(metrics)} />
       <MetricCards
@@ -76,6 +94,16 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
         error={error}
         onAdd={addMonitor}
         onRemove={removeMonitor}
+      />
+      <OrganizationsSection
+        isOwner={Boolean(isOwner)}
+        members={organizations.members}
+        saving={organizations.saving}
+        error={organizations.error}
+        notice={organizations.notice}
+        onCreateOrg={organizations.createOrg}
+        onInvite={organizations.invite}
+        onRemove={organizations.remove}
       />
       <TelegramSettingsCard
         settings={telegram.settings}

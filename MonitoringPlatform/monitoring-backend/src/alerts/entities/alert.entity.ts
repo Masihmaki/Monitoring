@@ -21,6 +21,10 @@ export class Alert {
   @Column('uuid', { nullable: true })
   userId!: string | null;
 
+  @Index()
+  @Column('uuid', { nullable: true })
+  organizationId!: string | null;
+
   @Column()
   machineName!: string;
 

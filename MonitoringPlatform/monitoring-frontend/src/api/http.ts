@@ -9,14 +9,18 @@ export class UnauthorizedError extends Error {
 
 type RequestOptions = RequestInit & {
   token?: string;
+  organizationId?: string;
 };
 
 export async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { token, headers: initHeaders, ...rest } = options;
+  const { token, organizationId, headers: initHeaders, ...rest } = options;
   const headers = new Headers(initHeaders);
   headers.set('Content-Type', 'application/json');
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+  if (organizationId) {
+    headers.set('X-Organization-Id', organizationId);
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {

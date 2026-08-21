@@ -18,6 +18,7 @@ export class MetricsController {
   ) {
     const savedMetric = await this.metricsService.create(
       createMetricDto,
+      user.organizationId,
       user.id,
     );
     return {
@@ -29,6 +30,6 @@ export class MetricsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll(@CurrentUser() user: AuthUser) {
-    return await this.metricsService.findAll(user.id);
+    return await this.metricsService.findAll(user.organizationId);
   }
 }

@@ -15,7 +15,7 @@ import { HttpChecker, type HttpCheckResult } from './http-checker.service';
 import { assertPublicHttpUrl } from './url-policy';
 import { UptimeStatus } from './uptime-status';
 
-const MAX_MONITORS_PER_USER = 20;
+const MAX_MONITORS_PER_ORG = 20;
 const CHECK_HISTORY_LIMIT = 50;
 
 @Injectable()
@@ -30,24 +30,27 @@ export class MonitorsService {
     private readonly metricsGateway: MetricsGateway,
   ) {}
 
-  async create(userId: string, dto: CreateMonitorDto): Promise<Monitor> {
+  async create(organizationId: string, dto: CreateMonitorDto): Promise<Monitor> {
     const url = await assertPublicHttpUrl(dto.url);
-    const count = await this.monitorRepository.count({ where: { userId } });
-    if (count >= MAX_MONITORS_PER_USER) {
+    const count = await this.monitorRepository.count({
+      where: { organizationId },
+    });
+    if (count >= MAX_MONITORS_PER_ORG) {
       throw new ConflictException(
-        `You can monitor at most ${MAX_MONITORS_PER_USER} sites`,
+        `You can monitor at most ${MAX_MONITORS_PER_ORG} sites`,
       );
     }
 
     const existing = await this.monitorRepository.findOne({
-      where: { userId, url },
+      where: { organizationId, url },
     });
     if (existing) {
       throw new ConflictException('This URL is already being monitored');
     }
 
     const monitor = this.monitorRepository.create({
-      userId,
+      organizationId,
+      userId: null,
       url,
       name: dto.name?.trim() || new URL(url).hostname,
       intervalSeconds: dto.intervalSeconds ?? 60,
@@ -58,16 +61,16 @@ export class MonitorsService {
     return (await this.monitorRepository.findOneBy({ id: saved.id })) ?? saved;
   }
 
-  async findAll(userId: string): Promise<Monitor[]> {
+  async findAll(organizationId: string): Promise<Monitor[]> {
     return await this.monitorRepository.find({
-      where: { userId },
+      where: { organizationId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async remove(userId: string, id: string): Promise<void> {
+  async remove(organizationId: string, id: string): Promise<void> {
     const monitor = await this.monitorRepository.findOne({
-      where: { id, userId },
+      where: { id, organizationId },
     });
     if (!monitor) {
       throw new NotFoundException('Monitor not found');
@@ -90,15 +93,17 @@ export class MonitorsService {
     });
 
     const now = Date.now();
-    return monitors.filter((monitor) => {
-      if (!monitor.lastCheckedAt) {
-        return true;
-      }
-      return (
-        now - monitor.lastCheckedAt.getTime() >=
-        monitor.intervalSeconds * 1000
-      );
-    }).slice(0, 15);
+    return monitors
+      .filter((monitor) => {
+        if (!monitor.lastCheckedAt) {
+          return true;
+        }
+        return (
+          now - monitor.lastCheckedAt.getTime() >=
+          monitor.intervalSeconds * 1000
+        );
+      })
+      .slice(0, 15);
   }
 
   private async runCheck(monitor: Monitor): Promise<void> {
@@ -125,7 +130,6 @@ export class MonitorsService {
     previousStatus: UptimeStatus,
     result: HttpCheckResult,
   ): Promise<void> {
-
     monitor.lastStatus = result.status;
     monitor.lastStatusCode = result.statusCode;
     monitor.lastLatencyMs = result.latencyMs;
@@ -148,10 +152,11 @@ export class MonitorsService {
 
     if (
       previousStatus !== UptimeStatus.DOWN &&
-      result.status === UptimeStatus.DOWN
+      result.status === UptimeStatus.DOWN &&
+      monitor.organizationId
     ) {
       const alert = await this.alertsService.createAlert(
-        monitor.userId,
+        monitor.organizationId,
         monitor.name,
         'UPTIME',
         result.statusCode ?? 0,

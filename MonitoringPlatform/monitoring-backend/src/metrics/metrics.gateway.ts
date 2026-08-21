@@ -4,12 +4,13 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { Metric } from './entities/metric.entity';
 import { Alert } from '../alerts/entities/alert.entity';
 import { Monitor } from '../monitors/entities/monitor.entity';
+import { OrganizationsService } from '../organizations/organizations.service';
 
 const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
   .split(',')
@@ -30,22 +31,34 @@ export class MetricsGateway
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => OrganizationsService))
+    private readonly organizationsService: OrganizationsService,
+  ) {}
 
   async handleConnection(client: Socket) {
     const token =
       (client.handshake.auth?.token as string | undefined) ??
       this.bearerFromHeader(client.handshake.headers.authorization);
+    const organizationId = client.handshake.auth?.organizationId as
+      | string
+      | undefined;
 
-    if (!token) {
+    if (!token || !organizationId) {
       client.disconnect();
       return;
     }
 
     try {
       const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
-      const room = `user:${payload.sub}`;
+      await this.organizationsService.assertMembership(
+        payload.sub,
+        organizationId,
+      );
+      const room = `org:${organizationId}`;
       client.data.userId = payload.sub;
+      client.data.organizationId = organizationId;
       await client.join(room);
       this.logger.log(`Client ${client.id} joined ${room}`);
     } catch {
@@ -58,21 +71,26 @@ export class MetricsGateway
   }
 
   sendNewMetric(metric: Metric) {
-    if (!metric.userId) {
+    if (!metric.organizationId) {
       return;
     }
-    this.server.to(`user:${metric.userId}`).emit('newMetric', metric);
+    this.server.to(`org:${metric.organizationId}`).emit('newMetric', metric);
   }
 
   sendNewAlert(alert: Alert) {
-    if (!alert.userId) {
+    if (!alert.organizationId) {
       return;
     }
-    this.server.to(`user:${alert.userId}`).emit('newAlert', alert);
+    this.server.to(`org:${alert.organizationId}`).emit('newAlert', alert);
   }
 
   sendMonitorUpdate(monitor: Monitor) {
-    this.server.to(`user:${monitor.userId}`).emit('monitorUpdated', monitor);
+    if (!monitor.organizationId) {
+      return;
+    }
+    this.server
+      .to(`org:${monitor.organizationId}`)
+      .emit('monitorUpdated', monitor);
   }
 
   private bearerFromHeader(header?: string | string[]): string | undefined {

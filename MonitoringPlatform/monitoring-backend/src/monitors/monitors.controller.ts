@@ -20,17 +20,17 @@ export class MonitorsController {
 
   @Get()
   findAll(@CurrentUser() user: AuthUser) {
-    return this.monitorsService.findAll(user.id);
+    return this.monitorsService.findAll(user.organizationId);
   }
 
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateMonitorDto) {
-    return this.monitorsService.create(user.id, dto);
+    return this.monitorsService.create(user.organizationId, dto);
   }
 
   @Delete(':id')
   async remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    await this.monitorsService.remove(user.id, id);
+    await this.monitorsService.remove(user.organizationId, id);
     return { status: 'deleted' };
   }
 }

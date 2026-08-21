@@ -1,14 +1,18 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
+import { OrganizationsService } from '../organizations/organizations.service';
 import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import type { OrganizationSummary } from '../organizations/organizations.service';
 
 export type AuthResponse = {
   accessToken: string;
@@ -17,12 +21,16 @@ export type AuthResponse = {
     email: string;
     apiKey: string;
   };
+  organizations: OrganizationSummary[];
+  activeOrganizationId: string;
 };
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    @Inject(forwardRef(() => OrganizationsService))
+    private readonly organizationsService: OrganizationsService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -34,6 +42,11 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.usersService.create(dto.email, passwordHash);
+    await this.organizationsService.createForUser(
+      user.id,
+      `${user.email.split('@')[0]} workspace`,
+      user.apiKey,
+    );
     return this.toAuthResponse(user);
   }
 
@@ -51,15 +64,13 @@ export class AuthService {
     return this.toAuthResponse(user);
   }
 
-  toPublicUser(user: User) {
-    return {
-      id: user.id,
-      email: user.email,
-      apiKey: user.apiKey,
-    };
-  }
+  async toAuthResponse(user: User): Promise<AuthResponse> {
+    const organizations = await this.organizationsService.listForUser(user.id);
+    const active = organizations[0];
+    if (!active) {
+      throw new UnauthorizedException('No organization available for this user');
+    }
 
-  private async toAuthResponse(user: User): Promise<AuthResponse> {
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,
       email: user.email,
@@ -67,7 +78,13 @@ export class AuthService {
 
     return {
       accessToken,
-      user: this.toPublicUser(user),
+      user: {
+        id: user.id,
+        email: user.email,
+        apiKey: active.apiKey,
+      },
+      organizations,
+      activeOrganizationId: active.id,
     };
   }
 }
