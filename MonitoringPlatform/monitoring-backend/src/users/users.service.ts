@@ -37,4 +37,11 @@ export class UsersService {
   async findByApiKey(apiKey: string): Promise<User | null> {
     return await this.usersRepository.findOne({ where: { apiKey } });
   }
+
+  async updateTelegramChatId(
+    userId: string,
+    telegramChatId: string | null,
+  ): Promise<void> {
+    await this.usersRepository.update({ id: userId }, { telegramChatId });
+  }
 }

@@ -19,6 +19,9 @@ export type AppConfiguration = {
     secret: string;
     expiresIn: string;
   };
+  telegram: {
+    botToken: string | null;
+  };
 };
 
 function required(name: string): string {
@@ -59,6 +62,9 @@ export default function configuration(): AppConfiguration {
     jwt: {
       secret: required('JWT_SECRET'),
       expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+    },
+    telegram: {
+      botToken: process.env.TELEGRAM_BOT_TOKEN?.trim() || null,
     },
   };
 }

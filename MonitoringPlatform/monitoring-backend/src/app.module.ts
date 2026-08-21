@@ -6,6 +6,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { AuthModule } from './auth/auth.module';
 import { MonitorsModule } from './monitors/monitors.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import configuration, { AppConfiguration } from './config/configuration';
 
@@ -37,6 +38,7 @@ import configuration, { AppConfiguration } from './config/configuration';
     MetricsModule,
     AlertsModule,
     MonitorsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

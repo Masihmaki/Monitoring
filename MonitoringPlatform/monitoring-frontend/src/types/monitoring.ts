@@ -54,3 +54,8 @@ export type CreateMonitorInput = {
   name?: string;
   intervalSeconds?: number;
 };
+
+export type TelegramSettings = {
+  botConfigured: boolean;
+  chatId: string | null;
+};

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository } from 'typeorm';
 import { Alert, AlertSeverity } from './entities/alert.entity';
 import { AppConfiguration } from '../config/configuration';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AlertsService {
@@ -11,6 +12,7 @@ export class AlertsService {
     @InjectRepository(Alert)
     private readonly alertRepository: Repository<Alert>,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createAlert(
@@ -49,7 +51,9 @@ export class AlertsService {
       severity,
       message,
     });
-    return await this.alertRepository.save(alert);
+    const saved = await this.alertRepository.save(alert);
+    await this.notificationsService.notifyAlert(saved);
+    return saved;
   }
 
   async findAll(userId: string): Promise<Alert[]> {

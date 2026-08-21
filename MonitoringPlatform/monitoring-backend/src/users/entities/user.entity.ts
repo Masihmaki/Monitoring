@@ -19,6 +19,9 @@ export class User {
   @Column({ unique: true })
   apiKey!: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  telegramChatId!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 }

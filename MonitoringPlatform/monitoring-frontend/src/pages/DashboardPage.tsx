@@ -5,8 +5,10 @@ import { HostStatusBar } from '../components/dashboard/HostStatusBar';
 import { MetricCards } from '../components/dashboard/MetricCards';
 import { ResourceChart } from '../components/dashboard/ResourceChart';
 import { MonitorsSection } from '../components/monitors/MonitorsSection';
+import { TelegramSettingsCard } from '../components/notifications/TelegramSettingsCard';
 import { useMonitoringFeed } from '../hooks/useMonitoringFeed';
 import { useMonitors } from '../hooks/useMonitors';
+import { useTelegramSettings } from '../hooks/useTelegramSettings';
 import {
   activeAlerts,
   emptyMetric,
@@ -32,6 +34,7 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
     addMonitor,
     removeMonitor,
   } = useMonitors(session, onLogout);
+  const telegram = useTelegramSettings(session, onLogout);
   const [copied, setCopied] = useState(false);
 
   const copyApiKey = useCallback(async () => {
@@ -73,6 +76,15 @@ export function DashboardPage({ session, onLogout }: DashboardPageProps) {
         error={error}
         onAdd={addMonitor}
         onRemove={removeMonitor}
+      />
+      <TelegramSettingsCard
+        settings={telegram.settings}
+        saving={telegram.saving}
+        testing={telegram.testing}
+        error={telegram.error}
+        notice={telegram.notice}
+        onSave={telegram.saveChatId}
+        onTest={telegram.sendTest}
       />
       <ActiveAlertsList alerts={liveAlerts} />
     </div>
