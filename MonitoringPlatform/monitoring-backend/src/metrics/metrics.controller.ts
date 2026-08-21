@@ -27,6 +27,12 @@ export class MetricsController {
     };
   }
 
+  @Get('hosts')
+  @UseGuards(JwtAuthGuard)
+  async listHosts(@CurrentUser() user: AuthUser) {
+    return await this.metricsService.listHosts(user.organizationId);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll(@CurrentUser() user: AuthUser) {

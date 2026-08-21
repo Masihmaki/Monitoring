@@ -10,10 +10,13 @@ import { OrganizationsSection } from '../components/organizations/OrganizationsS
 import { useMonitoringFeed } from '../hooks/useMonitoringFeed';
 import { useMonitors } from '../hooks/useMonitors';
 import { useOrganizations } from '../hooks/useOrganizations';
+import { useSelectedHost } from '../hooks/useSelectedHost';
 import { useTelegramSettings } from '../hooks/useTelegramSettings';
 import {
   activeAlerts,
   emptyMetric,
+  filterAlertsByHost,
+  filterMetricsByHost,
   fullestDisk,
   isAgentOnline,
   toChartData,
@@ -43,6 +46,11 @@ export function DashboardPage({
   } = useMonitors(session, onLogout);
   const telegram = useTelegramSettings(session, onLogout);
   const organizations = useOrganizations(session, onSessionChange, onLogout);
+  const { hosts, selectedHost, setSelectedHost } = useSelectedHost(
+    session,
+    metrics,
+    onLogout,
+  );
   const [copied, setCopied] = useState(false);
 
   const copyApiKey = useCallback(async () => {
@@ -55,8 +63,9 @@ export function DashboardPage({
     }
   }, [session.user.apiKey]);
 
-  const latest = metrics[0] ?? emptyMetric;
-  const liveAlerts = activeAlerts(alerts);
+  const hostMetrics = filterMetricsByHost(metrics, selectedHost);
+  const latest = hostMetrics[0] ?? emptyMetric;
+  const liveAlerts = activeAlerts(filterAlertsByHost(alerts, selectedHost));
   const activeOrg = session.organizations.find(
     (org) => org.id === session.activeOrganizationId,
   );
@@ -81,13 +90,18 @@ export function DashboardPage({
           onSessionChange(switchActiveOrganization(session, organizationId));
         }}
       />
-      <HostStatusBar machineName={latest.machineName} isOnline={isAgentOnline(metrics)} />
+      <HostStatusBar
+        hosts={hosts}
+        selectedHost={selectedHost}
+        isOnline={isAgentOnline(hostMetrics)}
+        onHostChange={setSelectedHost}
+      />
       <MetricCards
         latest={latest}
         fullestDisk={fullestDisk(latest.disks)}
         activeAlertCount={liveAlerts.length}
       />
-      <ResourceChart data={toChartData(metrics)} />
+      <ResourceChart data={toChartData(hostMetrics)} />
       <MonitorsSection
         monitors={monitors}
         saving={saving}

@@ -9,6 +9,17 @@ export async function fetchMetrics(
   return Array.isArray(data) ? data : [];
 }
 
+export async function fetchHosts(
+  token: string,
+  organizationId: string,
+): Promise<string[]> {
+  const data = await requestJson<string[]>('/metrics/hosts', {
+    token,
+    organizationId,
+  });
+  return Array.isArray(data) ? data : [];
+}
+
 export async function fetchAlerts(
   token: string,
   organizationId: string,

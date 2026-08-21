@@ -43,6 +43,19 @@ export class MetricsService {
     });
   }
 
+  async listHosts(organizationId: string): Promise<string[]> {
+    const rows = await this.metricRepository
+      .createQueryBuilder('metric')
+      .select('DISTINCT metric.machineName', 'machineName')
+      .where('metric.organizationId = :organizationId', { organizationId })
+      .orderBy('metric.machineName', 'ASC')
+      .getRawMany<{ machineName: string }>();
+
+    return rows
+      .map((row) => row.machineName)
+      .filter((name) => Boolean(name?.trim()));
+  }
+
   private async raiseAlerts(dto: CreateMetricDto, organizationId: string) {
     for (const violation of this.thresholdEvaluator.evaluate(dto)) {
       const alert = await this.alertsService.createAlert(

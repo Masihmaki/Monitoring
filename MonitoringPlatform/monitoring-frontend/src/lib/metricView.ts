@@ -12,6 +12,41 @@ export const emptyMetric: Metric = {
   createdAt: '',
 };
 
+export function listHostNames(
+  metrics: Metric[],
+  knownHosts: string[] = [],
+): string[] {
+  const names = new Set<string>();
+  for (const host of knownHosts) {
+    if (host.trim()) {
+      names.add(host.trim());
+    }
+  }
+  for (const metric of metrics) {
+    if (metric.machineName?.trim()) {
+      names.add(metric.machineName.trim());
+    }
+  }
+  return [...names].sort((a, b) => a.localeCompare(b, 'en'));
+}
+
+export function filterMetricsByHost(
+  metrics: Metric[],
+  host: string | null,
+): Metric[] {
+  if (!host) {
+    return metrics;
+  }
+  return metrics.filter((metric) => metric.machineName === host);
+}
+
+export function filterAlertsByHost(alerts: Alert[], host: string | null): Alert[] {
+  if (!host) {
+    return alerts;
+  }
+  return alerts.filter((alert) => alert.machineName === host);
+}
+
 export function isAgentOnline(metrics: Metric[]): boolean {
   const latest = metrics[0]?.createdAt;
   if (!latest) {
