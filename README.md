@@ -164,6 +164,7 @@ Dashboard requests send `Authorization: Bearer …` and `X-Organization-Id`.
 - Local development uses TypeORM `synchronize=true`. Do **not** enable that against a real shared database.
 - Never commit real `.env` files; only `.env.example` belongs in git.
 - Uptime checks block localhost and private IP ranges on purpose (SSRF protection).
+- Backend unit tests: `cd monitoring-backend && npm test` (URL policy + threshold evaluator).
 
 ## License
 
