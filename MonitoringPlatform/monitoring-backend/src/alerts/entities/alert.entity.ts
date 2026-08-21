@@ -12,6 +12,12 @@ export enum AlertSeverity {
   CRITICAL = 'CRITICAL',
 }
 
+export enum AlertStatus {
+  OPEN = 'OPEN',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  RESOLVED = 'RESOLVED',
+}
+
 @Entity('alerts')
 export class Alert {
   @PrimaryGeneratedColumn('uuid')
@@ -44,8 +50,21 @@ export class Alert {
   })
   severity!: AlertSeverity;
 
+  @Column({
+    type: 'enum',
+    enum: AlertStatus,
+    default: AlertStatus.OPEN,
+  })
+  status!: AlertStatus;
+
   @Column()
   message!: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  acknowledgedAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  resolvedAt!: Date | null;
 
   @CreateDateColumn()
   createdAt!: Date;

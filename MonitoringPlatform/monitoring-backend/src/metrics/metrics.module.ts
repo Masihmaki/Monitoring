@@ -12,7 +12,7 @@ import { OrganizationsModule } from '../organizations/organizations.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Metric]),
-    AlertsModule,
+    forwardRef(() => AlertsModule),
     AuthModule,
     forwardRef(() => OrganizationsModule),
   ],

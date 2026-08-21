@@ -84,6 +84,13 @@ export class MetricsGateway
     this.server.to(`org:${alert.organizationId}`).emit('newAlert', alert);
   }
 
+  sendAlertUpdate(alert: Alert) {
+    if (!alert.organizationId) {
+      return;
+    }
+    this.server.to(`org:${alert.organizationId}`).emit('alertUpdated', alert);
+  }
+
   sendMonitorUpdate(monitor: Monitor) {
     if (!monitor.organizationId) {
       return;

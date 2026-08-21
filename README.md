@@ -27,6 +27,7 @@ every 30s                         Socket.IO rooms per organization
 - Multi-host picker when several agents report different machine names
 - HTTP(S) uptime monitors with scheduled checks (SSRF-safe URL policy)
 - Threshold alerts (CPU / RAM / disk / site down) with cooldown
+- Operators can acknowledge or resolve alerts from the dashboard
 - Optional Telegram delivery (`TELEGRAM_BOT_TOKEN` + per-user chat ID)
 - Organization members: owners invite existing accounts by email
 

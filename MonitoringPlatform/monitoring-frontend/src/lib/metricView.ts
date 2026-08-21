@@ -57,7 +57,9 @@ export function isAgentOnline(metrics: Metric[]): boolean {
 
 export function activeAlerts(alerts: Alert[]): Alert[] {
   return alerts.filter(
-    (alert) => Date.now() - new Date(alert.createdAt).getTime() < ACTIVE_ALERT_MS,
+    (alert) =>
+      alert.status !== 'RESOLVED' &&
+      Date.now() - new Date(alert.createdAt).getTime() < ACTIVE_ALERT_MS,
   );
 }
 

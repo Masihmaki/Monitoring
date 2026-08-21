@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import { fetchAlerts, fetchMetrics } from '../api/monitoringApi';
+import { fetchAlerts, fetchMetrics, updateAlertStatus } from '../api/monitoringApi';
 import { UnauthorizedError } from '../api/http';
 import type { Session } from '../auth/session';
 import { API_BASE_URL } from '../config/app';
@@ -11,7 +11,13 @@ type Feed = {
   alerts: Alert[];
   loading: boolean;
   refresh: () => Promise<void>;
+  setAlertStatus: (alertId: string, status: Alert['status']) => Promise<void>;
 };
+
+function upsertAlert(list: Alert[], next: Alert): Alert[] {
+  const without = list.filter((item) => item.id !== next.id);
+  return [next, ...without];
+}
 
 export function useMonitoringFeed(
   session: Session,
@@ -41,6 +47,27 @@ export function useMonitoringFeed(
     }
   }, [session.accessToken, session.activeOrganizationId, onUnauthorized]);
 
+  const setAlertStatus = useCallback(
+    async (alertId: string, status: Alert['status']) => {
+      try {
+        const updated = await updateAlertStatus(
+          session.accessToken,
+          session.activeOrganizationId,
+          alertId,
+          status,
+        );
+        setAlerts((prev) => upsertAlert(prev, updated));
+      } catch (error) {
+        if (error instanceof UnauthorizedError) {
+          onUnauthorized();
+          return;
+        }
+        console.error('Error updating alert:', error);
+      }
+    },
+    [session.accessToken, session.activeOrganizationId, onUnauthorized],
+  );
+
   useEffect(() => {
     void refresh();
 
@@ -56,7 +83,11 @@ export function useMonitoringFeed(
     });
 
     socket.on('newAlert', (newAlert: Alert) => {
-      setAlerts((prev) => [newAlert, ...prev]);
+      setAlerts((prev) => upsertAlert(prev, newAlert));
+    });
+
+    socket.on('alertUpdated', (updated: Alert) => {
+      setAlerts((prev) => upsertAlert(prev, updated));
     });
 
     return () => {
@@ -64,5 +95,5 @@ export function useMonitoringFeed(
     };
   }, [session.accessToken, session.activeOrganizationId, refresh]);
 
-  return { metrics, alerts, loading, refresh };
+  return { metrics, alerts, loading, refresh, setAlertStatus };
 }

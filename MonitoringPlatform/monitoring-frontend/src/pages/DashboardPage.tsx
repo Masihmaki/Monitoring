@@ -35,7 +35,10 @@ export function DashboardPage({
   onSessionChange,
   onLogout,
 }: DashboardPageProps) {
-  const { metrics, alerts, loading, refresh } = useMonitoringFeed(session, onLogout);
+  const { metrics, alerts, loading, refresh, setAlertStatus } = useMonitoringFeed(
+    session,
+    onLogout,
+  );
   const {
     monitors,
     saving,
@@ -128,7 +131,7 @@ export function DashboardPage({
         onSave={telegram.saveChatId}
         onTest={telegram.sendTest}
       />
-      <ActiveAlertsList alerts={liveAlerts} />
+      <ActiveAlertsList alerts={liveAlerts} onUpdateStatus={setAlertStatus} />
     </div>
   );
 }

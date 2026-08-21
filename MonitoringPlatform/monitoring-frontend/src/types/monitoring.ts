@@ -23,7 +23,10 @@ export type Alert = {
   currentValue: number;
   thresholdValue: number;
   severity: string;
+  status: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
   message: string;
+  acknowledgedAt: string | null;
+  resolvedAt: string | null;
   createdAt: string;
 };
 
