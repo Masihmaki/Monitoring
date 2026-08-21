@@ -91,7 +91,7 @@ export class MetricsGateway
     this.server.to(`org:${alert.organizationId}`).emit('alertUpdated', alert);
   }
 
-  sendMonitorUpdate(monitor: Monitor) {
+  sendMonitorUpdate(monitor: Monitor | { organizationId: string | null }) {
     if (!monitor.organizationId) {
       return;
     }

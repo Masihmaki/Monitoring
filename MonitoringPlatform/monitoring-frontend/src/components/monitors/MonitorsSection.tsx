@@ -153,11 +153,18 @@ function MonitorRow({
           <span style={{ color, fontSize: '12px', fontWeight: 700 }}>
             {STATUS_LABEL[monitor.lastStatus]}
           </span>
+          <span style={{ color: 'var(--primary)', fontSize: '12px', fontWeight: 800 }}>
+            {monitor.uptimePercent == null
+              ? 'آپتایم —'
+              : `آپتایم ${monitor.uptimePercent.toFixed(1)}%`}
+          </span>
         </div>
         <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '12px', direction: 'ltr', textAlign: 'right' }}>
           {monitor.url}
         </p>
         <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '12px' }}>
+          {monitor.checkCount > 0 ? `${monitor.checkCount} بررسی` : 'بدون سابقه'}
+          {' · '}
           {monitor.lastLatencyMs != null ? `${monitor.lastLatencyMs}ms` : '—'}
           {' · '}
           {monitor.lastStatusCode != null ? `HTTP ${monitor.lastStatusCode}` : 'بدون پاسخ'}

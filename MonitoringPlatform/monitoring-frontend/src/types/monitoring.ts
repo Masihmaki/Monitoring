@@ -50,6 +50,8 @@ export type Monitor = {
   lastCheckedAt: string | null;
   lastError: string | null;
   createdAt: string;
+  uptimePercent: number | null;
+  checkCount: number;
 };
 
 export type CreateMonitorInput = {

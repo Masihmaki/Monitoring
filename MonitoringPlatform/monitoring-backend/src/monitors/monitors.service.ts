@@ -18,6 +18,11 @@ import { UptimeStatus } from './uptime-status';
 const MAX_MONITORS_PER_ORG = 20;
 const CHECK_HISTORY_LIMIT = 50;
 
+export type MonitorView = Monitor & {
+  uptimePercent: number | null;
+  checkCount: number;
+};
+
 @Injectable()
 export class MonitorsService {
   constructor(
@@ -30,7 +35,10 @@ export class MonitorsService {
     private readonly metricsGateway: MetricsGateway,
   ) {}
 
-  async create(organizationId: string, dto: CreateMonitorDto): Promise<Monitor> {
+  async create(
+    organizationId: string,
+    dto: CreateMonitorDto,
+  ): Promise<MonitorView> {
     const url = await assertPublicHttpUrl(dto.url);
     const count = await this.monitorRepository.count({
       where: { organizationId },
@@ -58,14 +66,17 @@ export class MonitorsService {
     });
     const saved = await this.monitorRepository.save(monitor);
     await this.runCheck(saved);
-    return (await this.monitorRepository.findOneBy({ id: saved.id })) ?? saved;
+    const refreshed =
+      (await this.monitorRepository.findOneBy({ id: saved.id })) ?? saved;
+    return await this.toMonitorView(refreshed);
   }
 
-  async findAll(organizationId: string): Promise<Monitor[]> {
-    return await this.monitorRepository.find({
+  async findAll(organizationId: string): Promise<MonitorView[]> {
+    const monitors = await this.monitorRepository.find({
       where: { organizationId },
       order: { createdAt: 'DESC' },
     });
+    return await this.attachUptime(monitors);
   }
 
   async remove(organizationId: string, id: string): Promise<void> {
@@ -148,7 +159,7 @@ export class MonitorsService {
     );
     await this.trimCheckHistory(monitor.id);
 
-    this.metricsGateway.sendMonitorUpdate(monitor);
+    this.metricsGateway.sendMonitorUpdate(await this.toMonitorView(monitor));
 
     if (
       previousStatus !== UptimeStatus.DOWN &&
@@ -168,6 +179,53 @@ export class MonitorsService {
         this.metricsGateway.sendNewAlert(alert);
       }
     }
+  }
+
+  private async toMonitorView(monitor: Monitor): Promise<MonitorView> {
+    const [view] = await this.attachUptime([monitor]);
+    return view;
+  }
+
+  private async attachUptime(monitors: Monitor[]): Promise<MonitorView[]> {
+    if (monitors.length === 0) {
+      return [];
+    }
+
+    const ids = monitors.map((monitor) => monitor.id);
+    const rows = await this.checkRepository
+      .createQueryBuilder('check')
+      .select('check.monitorId', 'monitorId')
+      .addSelect(
+        `SUM(CASE WHEN check.status = :up THEN 1 ELSE 0 END)`,
+        'upCount',
+      )
+      .addSelect('COUNT(*)', 'total')
+      .where('check.monitorId IN (:...ids)', { ids })
+      .setParameter('up', UptimeStatus.UP)
+      .groupBy('check.monitorId')
+      .getRawMany<{ monitorId: string; upCount: string; total: string }>();
+
+    const stats = new Map(
+      rows.map((row) => [
+        row.monitorId,
+        {
+          upCount: Number(row.upCount),
+          total: Number(row.total),
+        },
+      ]),
+    );
+
+    return monitors.map((monitor) => {
+      const stat = stats.get(monitor.id);
+      if (!stat || stat.total === 0) {
+        return { ...monitor, uptimePercent: null, checkCount: 0 };
+      }
+      return {
+        ...monitor,
+        uptimePercent: Math.round((stat.upCount / stat.total) * 1000) / 10,
+        checkCount: stat.total,
+      };
+    });
   }
 
   private async trimCheckHistory(monitorId: string) {
