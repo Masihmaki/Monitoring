@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { fetchAlerts, fetchMetrics, updateAlertStatus } from '../api/monitoringApi';
 import { UnauthorizedError } from '../api/http';
 import type { Session } from '../auth/session';
-import { API_BASE_URL } from '../config/app';
+import { API_BASE_URL, METRICS_HISTORY_LIMIT } from '../config/app';
 import type { Alert, Metric } from '../types/monitoring';
 
 type Feed = {
@@ -22,6 +22,7 @@ function upsertAlert(list: Alert[], next: Alert): Alert[] {
 export function useMonitoringFeed(
   session: Session,
   onUnauthorized: () => void,
+  selectedHost: string | null,
 ): Feed {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -31,7 +32,10 @@ export function useMonitoringFeed(
     try {
       setLoading(true);
       const [nextMetrics, nextAlerts] = await Promise.all([
-        fetchMetrics(session.accessToken, session.activeOrganizationId),
+        fetchMetrics(session.accessToken, session.activeOrganizationId, {
+          machineName: selectedHost,
+          limit: METRICS_HISTORY_LIMIT,
+        }),
         fetchAlerts(session.accessToken, session.activeOrganizationId),
       ]);
       setMetrics(nextMetrics);
@@ -45,7 +49,12 @@ export function useMonitoringFeed(
     } finally {
       setLoading(false);
     }
-  }, [session.accessToken, session.activeOrganizationId, onUnauthorized]);
+  }, [
+    session.accessToken,
+    session.activeOrganizationId,
+    selectedHost,
+    onUnauthorized,
+  ]);
 
   const setAlertStatus = useCallback(
     async (alertId: string, status: Alert['status']) => {
@@ -79,7 +88,13 @@ export function useMonitoringFeed(
     });
 
     socket.on('newMetric', (newMetric: Metric) => {
-      setMetrics((prev) => [newMetric, ...prev.slice(0, 99)]);
+      if (selectedHost && newMetric.machineName !== selectedHost) {
+        return;
+      }
+      setMetrics((prev) => [
+        newMetric,
+        ...prev.slice(0, METRICS_HISTORY_LIMIT - 1),
+      ]);
     });
 
     socket.on('newAlert', (newAlert: Alert) => {
@@ -93,7 +108,7 @@ export function useMonitoringFeed(
     return () => {
       socket.disconnect();
     };
-  }, [session.accessToken, session.activeOrganizationId, refresh]);
+  }, [session.accessToken, session.activeOrganizationId, selectedHost, refresh]);
 
   return { metrics, alerts, loading, refresh, setAlertStatus };
 }

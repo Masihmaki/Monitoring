@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { UnauthorizedError } from '../api/http';
 import { fetchHosts } from '../api/monitoringApi';
 import type { Session } from '../auth/session';
-import { listHostNames } from '../lib/metricView';
-import type { Metric } from '../types/monitoring';
 
 const hostKey = (organizationId: string) =>
   `monitoring.selectedHost.${organizationId}`;
@@ -16,7 +14,6 @@ type SelectedHostFeed = {
 
 export function useSelectedHost(
   session: Session,
-  metrics: Metric[],
   onUnauthorized: () => void,
 ): SelectedHostFeed {
   const [knownHosts, setKnownHosts] = useState<string[]>([]);
@@ -25,8 +22,8 @@ export function useSelectedHost(
   );
 
   const hosts = useMemo(
-    () => listHostNames(metrics, knownHosts),
-    [metrics, knownHosts],
+    () => [...knownHosts].sort((a, b) => a.localeCompare(b, 'en')),
+    [knownHosts],
   );
 
   const setSelectedHost = useCallback(

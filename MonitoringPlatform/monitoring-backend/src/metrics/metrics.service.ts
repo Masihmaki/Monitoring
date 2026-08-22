@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { Metric } from './entities/metric.entity';
 import { CreateMetricDto } from './dto/create-metric.dto';
+import { QueryMetricsDto } from './dto/query-metrics.dto';
 import { AlertsService } from '../alerts/alerts.service';
 import { MetricsGateway } from './metrics.gateway';
 import { ThresholdEvaluator } from './threshold-evaluator.service';
+
+const DEFAULT_METRICS_LIMIT = 360;
+const MAX_METRICS_LIMIT = 500;
 
 @Injectable()
 export class MetricsService {
@@ -35,11 +39,24 @@ export class MetricsService {
     return savedMetric;
   }
 
-  async findAll(organizationId: string): Promise<Metric[]> {
+  async findAll(
+    organizationId: string,
+    query: QueryMetricsDto = {},
+  ): Promise<Metric[]> {
+    const take = Math.min(
+      query.limit ?? DEFAULT_METRICS_LIMIT,
+      MAX_METRICS_LIMIT,
+    );
+    const where: FindOptionsWhere<Metric> = { organizationId };
+    const machineName = query.machineName?.trim();
+    if (machineName) {
+      where.machineName = machineName;
+    }
+
     return await this.metricRepository.find({
-      where: { organizationId },
+      where,
       order: { createdAt: 'DESC' },
-      take: 100,
+      take,
     });
   }
 

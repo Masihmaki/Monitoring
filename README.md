@@ -159,7 +159,7 @@ Within about 30 seconds, metrics should appear on the dashboard.
 | `POST` | `/auth/register`, `/auth/login` | Public |
 | `GET` | `/auth/me` | JWT |
 | `POST` | `/metrics` | `X-Api-Key` |
-| `GET` | `/metrics`, `/metrics/hosts`, `/alerts` | JWT + `X-Organization-Id` |
+| `GET` | `/metrics?machineName=&limit=`, `/metrics/hosts`, `/alerts` | JWT + `X-Organization-Id` |
 | `GET/POST/DELETE` | `/monitors` | JWT + org |
 | `GET/POST/DELETE` | `/organizations...` | JWT + org |
 | `GET/PATCH/POST` | `/notifications/telegram...` | JWT |

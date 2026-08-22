@@ -16,7 +16,6 @@ import {
   activeAlerts,
   emptyMetric,
   filterAlertsByHost,
-  filterMetricsByHost,
   fullestDisk,
   isAgentOnline,
   toChartData,
@@ -35,9 +34,14 @@ export function DashboardPage({
   onSessionChange,
   onLogout,
 }: DashboardPageProps) {
+  const { hosts, selectedHost, setSelectedHost } = useSelectedHost(
+    session,
+    onLogout,
+  );
   const { metrics, alerts, loading, refresh, setAlertStatus } = useMonitoringFeed(
     session,
     onLogout,
+    selectedHost,
   );
   const {
     monitors,
@@ -49,11 +53,6 @@ export function DashboardPage({
   } = useMonitors(session, onLogout);
   const telegram = useTelegramSettings(session, onLogout);
   const organizations = useOrganizations(session, onSessionChange, onLogout);
-  const { hosts, selectedHost, setSelectedHost } = useSelectedHost(
-    session,
-    metrics,
-    onLogout,
-  );
   const [copied, setCopied] = useState(false);
 
   const copyApiKey = useCallback(async () => {
@@ -66,8 +65,7 @@ export function DashboardPage({
     }
   }, [session.user.apiKey]);
 
-  const hostMetrics = filterMetricsByHost(metrics, selectedHost);
-  const latest = hostMetrics[0] ?? emptyMetric;
+  const latest = metrics[0] ?? emptyMetric;
   const liveAlerts = activeAlerts(filterAlertsByHost(alerts, selectedHost));
   const activeOrg = session.organizations.find(
     (org) => org.id === session.activeOrganizationId,
@@ -96,7 +94,7 @@ export function DashboardPage({
       <HostStatusBar
         hosts={hosts}
         selectedHost={selectedHost}
-        isOnline={isAgentOnline(hostMetrics)}
+        isOnline={isAgentOnline(metrics)}
         onHostChange={setSelectedHost}
       />
       <MetricCards
@@ -104,7 +102,7 @@ export function DashboardPage({
         fullestDisk={fullestDisk(latest.disks)}
         activeAlertCount={liveAlerts.length}
       />
-      <ResourceChart data={toChartData(hostMetrics)} />
+      <ResourceChart data={toChartData(metrics)} />
       <MonitorsSection
         monitors={monitors}
         saving={saving}

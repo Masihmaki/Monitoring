@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 import { CreateMetricDto } from './dto/create-metric.dto';
+import { QueryMetricsDto } from './dto/query-metrics.dto';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -35,7 +36,10 @@ export class MetricsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(@CurrentUser() user: AuthUser) {
-    return await this.metricsService.findAll(user.organizationId);
+  async findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: QueryMetricsDto,
+  ) {
+    return await this.metricsService.findAll(user.organizationId, query);
   }
 }
