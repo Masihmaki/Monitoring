@@ -47,6 +47,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:3000/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   web:
     build:
@@ -58,7 +68,29 @@ services:
     ports:
       - "${WEB_PORT:-5173}:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  agent:
+    profiles: [demo]
+    build:
+      context: ../MonitoringAgent
+    container_name: monitoring_agent
+    restart: unless-stopped
+    environment:
+      MonitoringApi__BaseUrl: http://api:3000/
+      MonitoringApi__ApiKey: ${AGENT_API_KEY}
+      MonitoringApi__MachineName: ${AGENT_MACHINE_NAME:-docker-agent}
+      MonitoringApi__PollingIntervalSeconds: ${AGENT_POLLING_INTERVAL_SECONDS:-30}
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   pgdata:

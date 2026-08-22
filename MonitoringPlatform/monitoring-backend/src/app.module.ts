@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { MonitorsModule } from './monitors/monitors.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { HealthModule } from './health/health.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import configuration, { AppConfiguration } from './config/configuration';
 
@@ -37,6 +38,7 @@ import configuration, { AppConfiguration } from './config/configuration';
       },
     }),
     ScheduleModule.forRoot(),
+    HealthModule,
     AuthModule,
     OrganizationsModule,
     MetricsModule,

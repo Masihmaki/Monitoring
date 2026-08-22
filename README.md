@@ -17,7 +17,7 @@ every 30s                         Socket.IO rooms per organization
 | Agent | `MonitoringAgent/` | Collects OS metrics and posts them with the org API key |
 | API | `MonitoringPlatform/monitoring-backend/` | Auth, orgs, metrics, alerts, uptime checks, Telegram |
 | UI | `MonitoringPlatform/monitoring-frontend/` | Persian RTL dashboard |
-| DB | Docker Compose Postgres | Persistence |
+| Compose | `MonitoringPlatform/docker-compose.yml` | Postgres + API + UI (+ optional demo agent profile) |
 
 ## Features
 
@@ -33,14 +33,40 @@ every 30s                         Socket.IO rooms per organization
 
 ## Prerequisites
 
-- Node.js 20+ (LTS recommended)
-- .NET 8 SDK (for the agent)
-- Docker Desktop (Postgres)
+- Docker Desktop (recommended for full-stack demo)
+- Node.js 20+ and .NET 8 SDK (only if you develop API/UI/agent outside Docker)
 - On Windows, use Docker context `default` for local work (`docker context use default`)
 
 ## Quick start
 
-### 1. Environment files
+### Option A — full stack in Docker (recommended for demo)
+
+```powershell
+cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform
+copy .env.example .env
+# Edit .env: set POSTGRES_PASSWORD and JWT_SECRET
+docker compose up -d --build
+```
+
+Open the dashboard at `http://localhost:5173` and the API at `http://localhost:3000/health`.
+
+**Start the optional demo agent container** (reports container metrics — good for a quick demo):
+
+1. Register in the dashboard and copy the org agent key (**کلید ایجنت**).
+2. Paste the key into `.env` as `AGENT_API_KEY=mon_...`
+3. Run:
+
+```powershell
+docker compose --profile demo up -d --build agent
+```
+
+The agent posts to `http://api:3000/` inside the compose network. Override the displayed host name with `AGENT_MACHINE_NAME` in `.env`.
+
+**Real host monitoring:** run the .NET agent on Windows/Linux outside Docker (see [Option B → Agent](#6-agent-real-host-monitoring)). That reports actual OS CPU/RAM/disk, not container limits.
+
+### Option B — local development (Postgres in Docker, API/UI on the host)
+
+#### 1. Environment files
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform
@@ -55,7 +81,7 @@ copy .env.example .env
 
 Edit passwords and `JWT_SECRET` in the backend `.env`. Postgres values in `MonitoringPlatform/.env` and `monitoring-backend/.env` must match.
 
-### 2. Database (or full stack with Docker)
+#### 2. Database
 
 **Postgres only (typical local Nest/Vite workflow):**
 
@@ -64,25 +90,13 @@ cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform
 docker compose up -d postgres
 ```
 
-**API + dashboard + Postgres in Docker:**
-
-```powershell
-cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform
-copy .env.example .env
-# set JWT_SECRET and POSTGRES_PASSWORD in .env
-docker compose up -d --build
-```
-
-Then open `http://localhost:5173` (web) and `http://localhost:3000` (API).  
-The agent still runs on the host with `dotnet run` and posts to `http://localhost:3000/`.
-
 To run only Postgres + API (develop the UI with Vite locally):
 
 ```powershell
 docker compose up -d --build postgres api
 ```
 
-### 3. API (local Node, if not using the `api` container)
+#### 3. API (local Node, if not using the `api` container)
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform\monitoring-backend
@@ -92,7 +106,7 @@ npm run start:dev
 
 API: `http://localhost:3000`
 
-### 4. Dashboard (local Vite, if not using the `web` container)
+#### 4. Dashboard (local Vite, if not using the `web` container)
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringPlatform\monitoring-frontend
@@ -102,20 +116,25 @@ npm run dev
 
 UI: `http://localhost:5173`
 
-### 5. Register and copy the agent key
+#### 5. Register and copy the agent key
 
 1. Open the dashboard → **ثبت‌نام**
 2. Click **کلید ایجنت** and copy the key (belongs to the active organization)
-3. Paste into `MonitoringAgent/appsettings.json`:
+3. Either:
+   - set `AGENT_API_KEY` in `MonitoringPlatform/.env` and use `docker compose --profile demo up -d agent`, or
+   - paste into `MonitoringAgent/appsettings.json`:
 
 ```json
 "MonitoringApi": {
   "BaseUrl": "http://localhost:3000/",
-  "ApiKey": "mon_..."
+  "ApiKey": "mon_...",
+  "MachineName": "my-laptop"
 }
 ```
 
-### 6. Agent
+Leave `MachineName` empty to use the OS hostname automatically.
+
+#### 6. Agent (real host monitoring)
 
 ```powershell
 cd C:\Users\sysadmin\Desktop\Monitoring\MonitoringAgent
