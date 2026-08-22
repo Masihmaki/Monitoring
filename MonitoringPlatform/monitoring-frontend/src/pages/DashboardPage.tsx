@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActiveAlertsList } from '../components/dashboard/ActiveAlertsList';
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { HostStatusBar } from '../components/dashboard/HostStatusBar';
+import { DisksPanel } from '../components/dashboard/DisksPanel';
 import { MetricCards } from '../components/dashboard/MetricCards';
 import { ResourceChart } from '../components/dashboard/ResourceChart';
 import { MonitorsSection } from '../components/monitors/MonitorsSection';
@@ -103,6 +104,7 @@ export function DashboardPage({
         activeAlertCount={liveAlerts.length}
       />
       <ResourceChart data={toChartData(metrics)} />
+      <DisksPanel disks={latest.disks ?? []} />
       <MonitorsSection
         monitors={monitors}
         saving={saving}

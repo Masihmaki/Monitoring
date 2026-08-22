@@ -11,7 +11,9 @@ export function ResourceChart({ data }: ResourceChartProps) {
     <div style={ui.chartSection} className="panel-enter">
       <div style={{ marginBottom: '20px' }}>
         <h2 style={ui.sectionTitle}>نمودار لحظه‌ای مصرف منابع</h2>
-        <p style={ui.sectionSubtitle}>مقایسه CPU و RAM بر حسب زمان دریافت متریک</p>
+        <p style={ui.sectionSubtitle}>
+          CPU، RAM و بیشترین مصرف دیسک (درایو پر) بر حسب زمان دریافت متریک
+        </p>
       </div>
 
       <div style={{ width: '100%', height: 320 }}>
@@ -25,6 +27,10 @@ export function ResourceChart({ data }: ResourceChartProps) {
               <linearGradient id="ramGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#1d6f8a" stopOpacity={0.3} />
                 <stop offset="95%" stopColor="#1d6f8a" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="diskGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#b7791f" stopOpacity={0.32} />
+                <stop offset="95%" stopColor="#b7791f" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(21,45,40,0.08)" vertical={false} />
@@ -55,6 +61,14 @@ export function ResourceChart({ data }: ResourceChartProps) {
               strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#ramGrad)"
+            />
+            <Area
+              type="monotone"
+              dataKey="Disk"
+              stroke="#b7791f"
+              strokeWidth={2.5}
+              fillOpacity={1}
+              fill="url(#diskGrad)"
             />
           </AreaChart>
         </ResponsiveContainer>

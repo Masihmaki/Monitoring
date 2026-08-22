@@ -34,6 +34,7 @@ export type ChartPoint = {
   time: string;
   CPU: number;
   RAM: number;
+  Disk: number;
 };
 
 export type UptimeStatus = 'UNKNOWN' | 'UP' | 'DOWN';

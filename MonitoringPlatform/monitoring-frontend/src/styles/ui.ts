@@ -261,4 +261,22 @@ export const ui: Record<string, CSSProperties> = {
     cursor: 'pointer',
     display: 'flex',
   },
+  diskList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  diskRow: {
+    backgroundColor: 'var(--bg-solid)',
+    border: '1px solid var(--border-color)',
+    borderRadius: 'var(--radius-md)',
+    padding: '14px 16px',
+  },
+  diskRowTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '4px',
+  },
 };

@@ -63,10 +63,14 @@ export function activeAlerts(alerts: Alert[]): Alert[] {
   );
 }
 
-export function fullestDisk(disks: DiskMetric[]): DiskMetric | undefined {
+export function sortDisksByUsage(disks: DiskMetric[]): DiskMetric[] {
   return [...(disks ?? [])].sort(
     (a, b) => (b.usedPercent ?? 0) - (a.usedPercent ?? 0),
-  )[0];
+  );
+}
+
+export function fullestDisk(disks: DiskMetric[]): DiskMetric | undefined {
+  return sortDisksByUsage(disks)[0];
 }
 
 export function toChartData(metrics: Metric[]): ChartPoint[] {
@@ -78,5 +82,6 @@ export function toChartData(metrics: Metric[]): ChartPoint[] {
     }),
     CPU: parseFloat(metric.cpuUsagePercent.toFixed(1)),
     RAM: parseFloat(metric.ramUsagePercent.toFixed(1)),
+    Disk: parseFloat((fullestDisk(metric.disks)?.usedPercent ?? 0).toFixed(1)),
   }));
 }
