@@ -65,3 +65,10 @@ export type TelegramSettings = {
   botConfigured: boolean;
   chatId: string | null;
 };
+
+export type AlertThresholds = {
+  cpuThreshold: number;
+  ramThreshold: number;
+  diskThreshold: number;
+  customized: boolean;
+};

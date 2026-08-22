@@ -1,14 +1,20 @@
 import { AlertTriangle, Cpu, HardDrive, CpuIcon as Memory, ShieldCheck } from 'lucide-react';
 import { ui } from '../../styles/ui';
-import type { DiskMetric, Metric } from '../../types/monitoring';
+import type { AlertThresholds, DiskMetric, Metric } from '../../types/monitoring';
 
 type MetricCardsProps = {
   latest: Metric;
   fullestDisk?: DiskMetric;
   activeAlertCount: number;
+  thresholds: AlertThresholds;
 };
 
-export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCardsProps) {
+export function MetricCards({
+  latest,
+  fullestDisk,
+  activeAlertCount,
+  thresholds,
+}: MetricCardsProps) {
   return (
     <div style={ui.grid4} className="panel-enter">
       <div style={ui.card}>
@@ -22,7 +28,7 @@ export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCar
           <span
             style={{
               ...ui.cardNum,
-              color: latest.cpuUsagePercent > 80 ? 'var(--danger)' : 'var(--text-main)',
+              color: latest.cpuUsagePercent > thresholds.cpuThreshold ? 'var(--danger)' : 'var(--text-main)',
             }}
           >
             {latest.cpuUsagePercent.toFixed(1)}%
@@ -34,7 +40,7 @@ export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCar
               ...ui.progressBar,
               width: `${Math.min(latest.cpuUsagePercent, 100)}%`,
               backgroundColor:
-                latest.cpuUsagePercent > 80 ? 'var(--danger)' : 'var(--accent-cpu)',
+                latest.cpuUsagePercent > thresholds.cpuThreshold ? 'var(--danger)' : 'var(--accent-cpu)',
             }}
           />
         </div>
@@ -51,7 +57,7 @@ export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCar
           <span
             style={{
               ...ui.cardNum,
-              color: latest.ramUsagePercent > 85 ? 'var(--danger)' : 'var(--text-main)',
+              color: latest.ramUsagePercent > thresholds.ramThreshold ? 'var(--danger)' : 'var(--text-main)',
             }}
           >
             {latest.ramUsagePercent.toFixed(1)}%
@@ -66,7 +72,7 @@ export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCar
               ...ui.progressBar,
               width: `${Math.min(latest.ramUsagePercent, 100)}%`,
               backgroundColor:
-                latest.ramUsagePercent > 85 ? 'var(--danger)' : 'var(--accent-ram)',
+                latest.ramUsagePercent > thresholds.ramThreshold ? 'var(--danger)' : 'var(--accent-ram)',
             }}
           />
         </div>
@@ -83,7 +89,7 @@ export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCar
           <span
             style={{
               ...ui.cardNum,
-              color: (fullestDisk?.usedPercent ?? 0) > 90 ? 'var(--danger)' : 'var(--text-main)',
+              color: (fullestDisk?.usedPercent ?? 0) > thresholds.diskThreshold ? 'var(--danger)' : 'var(--text-main)',
             }}
           >
             {fullestDisk ? `${fullestDisk.usedPercent.toFixed(1)}%` : '—'}
@@ -98,7 +104,7 @@ export function MetricCards({ latest, fullestDisk, activeAlertCount }: MetricCar
               ...ui.progressBar,
               width: `${Math.min(fullestDisk?.usedPercent ?? 0, 100)}%`,
               backgroundColor:
-                (fullestDisk?.usedPercent ?? 0) > 90 ? 'var(--danger)' : 'var(--accent-disk)',
+                (fullestDisk?.usedPercent ?? 0) > thresholds.diskThreshold ? 'var(--danger)' : 'var(--accent-disk)',
             }}
           />
         </div>

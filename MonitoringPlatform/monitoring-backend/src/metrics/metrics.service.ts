@@ -7,6 +7,7 @@ import { QueryMetricsDto } from './dto/query-metrics.dto';
 import { AlertsService } from '../alerts/alerts.service';
 import { MetricsGateway } from './metrics.gateway';
 import { ThresholdEvaluator } from './threshold-evaluator.service';
+import { OrganizationsService } from '../organizations/organizations.service';
 
 const DEFAULT_METRICS_LIMIT = 360;
 const MAX_METRICS_LIMIT = 500;
@@ -19,6 +20,7 @@ export class MetricsService {
     private readonly alertsService: AlertsService,
     private readonly metricsGateway: MetricsGateway,
     private readonly thresholdEvaluator: ThresholdEvaluator,
+    private readonly organizationsService: OrganizationsService,
   ) {}
 
   async create(
@@ -74,7 +76,9 @@ export class MetricsService {
   }
 
   private async raiseAlerts(dto: CreateMetricDto, organizationId: string) {
-    for (const violation of this.thresholdEvaluator.evaluate(dto)) {
+    const thresholds =
+      await this.organizationsService.getEffectiveAlertThresholds(organizationId);
+    for (const violation of this.thresholdEvaluator.evaluate(dto, thresholds)) {
       const alert = await this.alertsService.createAlert(
         organizationId,
         dto.machineName,

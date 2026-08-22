@@ -5,17 +5,24 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Alert } from '../alerts/entities/alert.entity';
+import { AppConfiguration } from '../config/configuration';
 import { Metric } from '../metrics/entities/metric.entity';
 import { Monitor } from '../monitors/entities/monitor.entity';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateAlertThresholdsDto } from './dto/update-alert-thresholds.dto';
 import { OrganizationMember } from './entities/organization-member.entity';
 import { Organization } from './entities/organization.entity';
 import { OrganizationRole } from './organization-role';
+import {
+  AlertThresholdSettings,
+  AlertThresholdValues,
+} from './alert-thresholds';
 
 export type OrganizationSummary = {
   id: string;
@@ -49,6 +56,7 @@ export class OrganizationsService implements OnModuleInit {
     @InjectRepository(Monitor)
     private readonly monitorRepository: Repository<Monitor>,
     private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit() {
@@ -223,6 +231,92 @@ export class OrganizationsService implements OnModuleInit {
       select: { userId: true },
     });
     return members.map((member) => member.userId);
+  }
+
+  async getAlertThresholds(
+    userId: string,
+    organizationId: string,
+  ): Promise<AlertThresholdSettings> {
+    await this.assertMembership(userId, organizationId);
+    const organization = await this.findOrganizationOrThrow(organizationId);
+    return this.toAlertThresholdSettings(organization);
+  }
+
+  async updateAlertThresholds(
+    userId: string,
+    organizationId: string,
+    dto: UpdateAlertThresholdsDto,
+  ): Promise<AlertThresholdSettings> {
+    const membership = await this.assertMembership(userId, organizationId);
+    if (membership.role !== OrganizationRole.OWNER) {
+      throw new ForbiddenException('Only owners can update alert thresholds');
+    }
+
+    const organization = await this.findOrganizationOrThrow(organizationId);
+    organization.alertCpuThreshold = dto.cpuThreshold;
+    organization.alertRamThreshold = dto.ramThreshold;
+    organization.alertDiskThreshold = dto.diskThreshold;
+    await this.organizationRepository.save(organization);
+
+    return this.toAlertThresholdSettings(organization);
+  }
+
+  async getEffectiveAlertThresholds(
+    organizationId: string,
+  ): Promise<AlertThresholdValues> {
+    const organization = await this.organizationRepository.findOne({
+      where: { id: organizationId },
+    });
+    if (!organization) {
+      return this.defaultAlertThresholds();
+    }
+    return this.resolveAlertThresholds(organization);
+  }
+
+  private async findOrganizationOrThrow(
+    organizationId: string,
+  ): Promise<Organization> {
+    const organization = await this.organizationRepository.findOne({
+      where: { id: organizationId },
+    });
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+    return organization;
+  }
+
+  private defaultAlertThresholds(): AlertThresholdValues {
+    const alerts =
+      this.configService.getOrThrow<AppConfiguration['alerts']>('alerts');
+    return {
+      cpuThreshold: alerts.cpuThreshold,
+      ramThreshold: alerts.ramThreshold,
+      diskThreshold: alerts.diskThreshold,
+    };
+  }
+
+  private resolveAlertThresholds(
+    organization: Organization,
+  ): AlertThresholdValues {
+    const defaults = this.defaultAlertThresholds();
+    return {
+      cpuThreshold: organization.alertCpuThreshold ?? defaults.cpuThreshold,
+      ramThreshold: organization.alertRamThreshold ?? defaults.ramThreshold,
+      diskThreshold: organization.alertDiskThreshold ?? defaults.diskThreshold,
+    };
+  }
+
+  private toAlertThresholdSettings(
+    organization: Organization,
+  ): AlertThresholdSettings {
+    const values = this.resolveAlertThresholds(organization);
+    return {
+      ...values,
+      customized:
+        organization.alertCpuThreshold != null ||
+        organization.alertRamThreshold != null ||
+        organization.alertDiskThreshold != null,
+    };
   }
 
   private async backfillPersonalOrganizations() {

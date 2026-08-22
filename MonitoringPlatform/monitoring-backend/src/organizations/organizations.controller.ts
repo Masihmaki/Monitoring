@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/auth-user';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateAlertThresholdsDto } from './dto/update-alert-thresholds.dto';
 import { OrganizationsService } from './organizations.service';
 
 @Controller('organizations')
@@ -27,6 +29,26 @@ export class OrganizationsController {
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateOrganizationDto) {
     return this.organizationsService.create(user.id, dto);
+  }
+
+  @Get('alert-thresholds')
+  getAlertThresholds(@CurrentUser() user: AuthUser) {
+    return this.organizationsService.getAlertThresholds(
+      user.id,
+      user.organizationId,
+    );
+  }
+
+  @Patch('alert-thresholds')
+  updateAlertThresholds(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateAlertThresholdsDto,
+  ) {
+    return this.organizationsService.updateAlertThresholds(
+      user.id,
+      user.organizationId,
+      dto,
+    );
   }
 
   @Get(':id/members')

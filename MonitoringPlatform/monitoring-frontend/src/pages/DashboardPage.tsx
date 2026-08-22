@@ -5,9 +5,11 @@ import { HostStatusBar } from '../components/dashboard/HostStatusBar';
 import { DisksPanel } from '../components/dashboard/DisksPanel';
 import { MetricCards } from '../components/dashboard/MetricCards';
 import { ResourceChart } from '../components/dashboard/ResourceChart';
+import { AlertThresholdsCard } from '../components/settings/AlertThresholdsCard';
 import { MonitorsSection } from '../components/monitors/MonitorsSection';
 import { TelegramSettingsCard } from '../components/notifications/TelegramSettingsCard';
 import { OrganizationsSection } from '../components/organizations/OrganizationsSection';
+import { useAlertThresholds } from '../hooks/useAlertThresholds';
 import { useMonitoringFeed } from '../hooks/useMonitoringFeed';
 import { useMonitors } from '../hooks/useMonitors';
 import { useOrganizations } from '../hooks/useOrganizations';
@@ -22,6 +24,7 @@ import {
   toChartData,
 } from '../lib/metricView';
 import { ui } from '../styles/ui';
+import { DEFAULT_ALERT_THRESHOLDS } from '../config/app';
 import { switchActiveOrganization, type Session } from '../auth/session';
 
 type DashboardPageProps = {
@@ -53,6 +56,7 @@ export function DashboardPage({
     removeMonitor,
   } = useMonitors(session, onLogout);
   const telegram = useTelegramSettings(session, onLogout);
+  const alertThresholds = useAlertThresholds(session, onLogout);
   const organizations = useOrganizations(session, onSessionChange, onLogout);
   const [copied, setCopied] = useState(false);
 
@@ -72,6 +76,7 @@ export function DashboardPage({
     (org) => org.id === session.activeOrganizationId,
   );
   const isOwner = activeOrg?.role === 'OWNER';
+  const thresholds = alertThresholds.thresholds ?? DEFAULT_ALERT_THRESHOLDS;
 
   return (
     <div style={ui.wrapper}>
@@ -86,6 +91,7 @@ export function DashboardPage({
           void refresh();
           void refreshMonitors();
           void organizations.refreshMembers();
+          void alertThresholds.refresh();
         }}
         onLogout={onLogout}
         onOrganizationChange={(organizationId) => {
@@ -102,9 +108,18 @@ export function DashboardPage({
         latest={latest}
         fullestDisk={fullestDisk(latest.disks)}
         activeAlertCount={liveAlerts.length}
+        thresholds={thresholds}
       />
       <ResourceChart data={toChartData(metrics)} />
-      <DisksPanel disks={latest.disks ?? []} />
+      <DisksPanel disks={latest.disks ?? []} diskThreshold={thresholds.diskThreshold} />
+      <AlertThresholdsCard
+        thresholds={alertThresholds.thresholds}
+        isOwner={Boolean(isOwner)}
+        saving={alertThresholds.saving}
+        error={alertThresholds.error}
+        notice={alertThresholds.notice}
+        onSave={alertThresholds.save}
+      />
       <MonitorsSection
         monitors={monitors}
         saving={saving}

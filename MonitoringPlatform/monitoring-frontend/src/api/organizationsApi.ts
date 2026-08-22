@@ -1,4 +1,5 @@
 import type { OrganizationSummary } from '../auth/session';
+import type { AlertThresholds } from '../types/monitoring';
 import { requestJson } from './http';
 
 export type OrganizationMember = {
@@ -71,4 +72,30 @@ export async function removeMember(
       method: 'DELETE',
     },
   );
+}
+
+export async function fetchAlertThresholds(
+  token: string,
+  organizationId: string,
+): Promise<AlertThresholds> {
+  return await requestJson<AlertThresholds>('/organizations/alert-thresholds', {
+    token,
+    organizationId,
+  });
+}
+
+export async function saveAlertThresholds(
+  token: string,
+  organizationId: string,
+  thresholds: Pick<
+    AlertThresholds,
+    'cpuThreshold' | 'ramThreshold' | 'diskThreshold'
+  >,
+): Promise<AlertThresholds> {
+  return await requestJson<AlertThresholds>('/organizations/alert-thresholds', {
+    token,
+    organizationId,
+    method: 'PATCH',
+    body: JSON.stringify(thresholds),
+  });
 }

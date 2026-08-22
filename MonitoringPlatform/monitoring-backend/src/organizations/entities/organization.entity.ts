@@ -18,6 +18,15 @@ export class Organization {
   @Column()
   apiKey!: string;
 
+  @Column({ type: 'double precision', nullable: true })
+  alertCpuThreshold: number | null = null;
+
+  @Column({ type: 'double precision', nullable: true })
+  alertRamThreshold: number | null = null;
+
+  @Column({ type: 'double precision', nullable: true })
+  alertDiskThreshold: number | null = null;
+
   @CreateDateColumn()
   createdAt!: Date;
 }

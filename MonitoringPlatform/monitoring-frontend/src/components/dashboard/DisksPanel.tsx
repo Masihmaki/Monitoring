@@ -5,9 +5,10 @@ import type { DiskMetric } from '../../types/monitoring';
 
 type DisksPanelProps = {
   disks: DiskMetric[];
+  diskThreshold: number;
 };
 
-export function DisksPanel({ disks }: DisksPanelProps) {
+export function DisksPanel({ disks, diskThreshold }: DisksPanelProps) {
   const rows = sortDisksByUsage(disks);
 
   return (
@@ -27,7 +28,7 @@ export function DisksPanel({ disks }: DisksPanelProps) {
         <div style={ui.diskList}>
           {rows.map((disk) => {
             const usedGb = Math.max(disk.totalGb - disk.freeGb, 0);
-            const isCritical = disk.usedPercent > 90;
+            const isCritical = disk.usedPercent > diskThreshold;
 
             return (
               <div key={disk.driveName} style={ui.diskRow}>
